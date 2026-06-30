@@ -35,12 +35,13 @@ jobs:
         run: |
           python main.py --send-email --top-buy 5 --top-watch 5 --min-rs-score 70
 
-      - name: Show output files
+      - name: Show TXT report in log
         if: always()
         run: |
-          echo "Listing output files:"
+          echo "===== Output files ====="
           find . -maxdepth 3 -type f | sort
-          echo "----- TXT REPORT -----"
+          echo ""
+          echo "===== TXT REPORT ====="
           cat output/strong_pullback_report.txt || true
 
       - name: Upload report artifacts
