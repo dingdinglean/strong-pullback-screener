@@ -1,0 +1,45 @@
+name: Strong Trend Pullback Screener
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 22 * * 1-5"
+
+jobs:
+  run-screener:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run screener
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_SUBJECT: ${{ secrets.EMAIL_SUBJECT }}
+          SEND_EMAIL: "true"
+        run: |
+          python main.py --send-email --top-buy 10 --top-watch 20 --min-rs-score 70
+
+      - name: Upload report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strong-pullback-report
+          path: |
+            output/strong_pullback_candidates.csv
+            output/strong_pullback_report.md
