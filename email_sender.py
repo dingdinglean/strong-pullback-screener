@@ -98,7 +98,12 @@ def send_report_email(
     for path in report_paths:
         if not path.exists():
             continue
-        subtype = "csv" if path.suffix.lower() == ".csv" else "markdown"
+        if path.suffix.lower() == ".csv":
+            subtype = "csv"
+        elif path.suffix.lower() == ".md":
+            subtype = "markdown"
+        else:
+            subtype = "plain"
         message.add_attachment(
             path.read_bytes(),
             maintype="text",

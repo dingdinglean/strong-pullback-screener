@@ -24,6 +24,7 @@ Reports are written to:
 
 The email body uses the same compact plain text as `strong_pullback_report.txt`.
 It does not send the full Markdown report as the message body.
+Email attachments include only `strong_pullback_report.txt`; CSV and Markdown are kept in GitHub Actions artifacts for review and debugging.
 
 ## V3 Signal Rules
 

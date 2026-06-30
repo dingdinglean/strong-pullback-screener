@@ -1103,17 +1103,19 @@ def build_plain_text_report(
     rows: list[ScreenedStock],
     top_themes: list[dict[str, object]],
 ) -> str:
-    a_rows = [row for row in rows if row.list_name == "A"][:3]
+    a_rows = [row for row in rows if row.list_name == "A"][:2]
     b_rows = [row for row in rows if row.list_name == "B"][:3]
-    c_rows = [row for row in rows if row.list_name == "C"][:2]
+    c_rows = [row for row in rows if row.list_name == "C"][:3]
 
     lines = [
         "【强势股回踩 V3】",
         "今日结论：",
         build_plain_focus_line(a_rows),
-        build_plain_far_line([*b_rows, *c_rows]),
         build_plain_signal_line(a_rows),
-        "主线：" + build_plain_theme_line(top_themes),
+        build_plain_far_line([*b_rows, *c_rows]),
+        build_plain_no_chase_line(c_rows),
+        "主线：",
+        *build_plain_theme_lines(top_themes),
         "A榜：",
     ]
     lines.extend(build_plain_a_lines(a_rows))
@@ -1129,14 +1131,21 @@ def build_plain_focus_line(a_rows: list[ScreenedStock]) -> str:
     if not a_rows:
         return "今日没有A榜，宁可空手。"
     symbols = "、".join(row.symbol for row in a_rows)
-    return f"只看 {symbols}。"
+    return f"今日A榜：{symbols}，需人工复核图形和止损。"
 
 
 def build_plain_far_line(rows: list[ScreenedStock]) -> str:
-    far_symbols = [row.symbol for row in rows if row.distance_blue_lower_abs_pct > 7]
+    far_symbols = [row.symbol for row in rows if 7 < row.distance_blue_lower_abs_pct <= 10]
     if not far_symbols:
         return "距离DW1超过7%的票不进A榜。"
-    return f"{'、'.join(far_symbols[:4])} 距离DW1偏远，不追。"
+    return f"{'、'.join(far_symbols[:4])} 距DW1偏远，等回踩。"
+
+
+def build_plain_no_chase_line(rows: list[ScreenedStock]) -> str:
+    if not rows:
+        return "太远或过热的票不追。"
+    symbols = "、".join(row.symbol for row in rows[:4])
+    return f"{symbols} 太远，不追。"
 
 
 def build_plain_signal_line(a_rows: list[ScreenedStock]) -> str:
@@ -1145,14 +1154,18 @@ def build_plain_signal_line(a_rows: list[ScreenedStock]) -> str:
     return "当前没有2H真实DXDX抄底，A榜为空。"
 
 
-def build_plain_theme_line(top_themes: list[dict[str, object]]) -> str:
+def build_plain_theme_lines(top_themes: list[dict[str, object]]) -> list[str]:
     if not top_themes:
-        return "数据不足，暂不判断。"
-    labels = []
-    for index, row in enumerate(top_themes[:3], start=1):
-        suffix = "最强" if index == 1 else "第二" if index == 2 else "第三"
-        labels.append(f"{index}、{row['theme']}{suffix}")
-    return "；".join(labels) + "。"
+        return ["1、数据不足，暂不判断。"]
+    lines = []
+    for index in range(1, 4):
+        if index <= len(top_themes):
+            row = top_themes[index - 1]
+            suffix = "最强" if index == 1 else "第二" if index == 2 else "第三"
+            lines.append(f"{index}、{row['theme']}{suffix}")
+        else:
+            lines.append(f"{index}、暂无")
+    return lines
 
 
 def build_plain_a_lines(rows: list[ScreenedStock]) -> list[str]:
@@ -1161,9 +1174,8 @@ def build_plain_a_lines(rows: list[ScreenedStock]) -> list[str]:
     lines = []
     for index, row in enumerate(rows, start=1):
         lines.append(
-            f"{index}、{row.symbol}｜{plain_type_label(row)}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}"
-            f"｜2H真实抄底：{yes_no(row.two_hour_bottom_signal)}｜1H真实抄底：{yes_no(row.early_signal_1h)}"
-            f"｜proxy预警：{yes_no(row.proxy_warning)}｜{plain_action_label(row)}。"
+            f"{row.symbol}｜{plain_type_label(row)}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}"
+            f"｜2H真实DXDX｜止损：2H最近低点或DW1下方"
         )
     return lines
 
@@ -1172,7 +1184,7 @@ def build_plain_b_lines(rows: list[ScreenedStock]) -> list[str]:
     if not rows:
         return ["无。"]
     return [
-        f"{row.symbol}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}，{plain_reason(row)}。"
+        f"{row.symbol}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}，{plain_reason(row)}｜等待：{plain_wait_condition(row)}"
         for row in rows
     ]
 
@@ -1180,17 +1192,16 @@ def build_plain_b_lines(rows: list[ScreenedStock]) -> list[str]:
 def build_plain_c_lines(rows: list[ScreenedStock]) -> list[str]:
     if not rows:
         return ["无。"]
-    return [
-        f"{row.symbol}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}，太远/不追。"
+    parts = [
+        f"{row.symbol}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}，太远"
         for row in rows
     ]
+    return ["；".join(parts)]
 
 
 def build_plain_risk_lines() -> list[str]:
     return [
-        "风险：proxy只作为辅助预警，不能作为A榜依据。",
-        "真实抄底来自 cd.docx 的 DXDX，卖出来自 DBJGXC。",
-        "真实买点必须：日线蓝线在黄线上方 + 靠近DW1 + 2H真实DXDX。",
+        "风险：真实买点=日线蓝在黄上+靠近DW1+2H真实DXDX。",
     ]
 
 
@@ -1226,11 +1237,20 @@ def plain_reason(row: ScreenedStock) -> str:
     return row.downgrade_reason.split("；")[0]
 
 
+def plain_wait_condition(row: ScreenedStock) -> str:
+    if "主题不是今日主线" in row.downgrade_reason:
+        return "进入主线 or 2H真实DXDX"
+    if row.distance_blue_lower_abs_pct <= 7 and "主线内强股" not in row.downgrade_reason:
+        return "进入主线 or 2H真实DXDX"
+    return "靠近DW1 + 2H真实DXDX"
+
+
 def build_email_subject(rows: list[ScreenedStock]) -> str:
     a_symbols = [row.symbol for row in rows if row.list_name == "A"][:3]
+    data_warning_suffix = "【数据警告】" if any(row.list_name == "DATA_WARNING" for row in rows) else ""
     if a_symbols:
-        return f"【真实抄底】强势股回踩 V3：{'、'.join(a_symbols)}"
-    return "【观察版】强势股回踩 V3：无真实2H抄底"
+        return f"【真实抄底】强势股回踩 V3：{'、'.join(a_symbols)}{data_warning_suffix}"
+    return f"【观察版】强势股回踩 V3：无真实2H抄底{data_warning_suffix}"
 
 
 def build_conclusion_lines(
@@ -1488,17 +1508,23 @@ def main() -> int:
     email_subject = build_email_subject(rows)
     write_csv(rows)
     write_markdown(report)
-    write_text_report(plain_report)
+    try:
+        write_text_report(plain_report)
+    except Exception as exc:
+        print(f"ERROR: TXT report write failed, email body will be used as fallback: {exc}", file=sys.stderr)
+        traceback.print_exc()
     print(f"Wrote {CSV_PATH}")
     print(f"Wrote {MD_PATH}")
-    print(f"Wrote {TXT_PATH}")
+    if TXT_PATH.exists():
+        print(f"Wrote {TXT_PATH}")
 
     if send_email:
         a_count = sum(1 for row in rows if row.list_name == "A")
+        email_attachments = [TXT_PATH] if TXT_PATH.exists() else []
         try:
             send_report_email(
                 report_body=plain_report,
-                report_paths=[CSV_PATH, MD_PATH, TXT_PATH],
+                report_paths=email_attachments,
                 a_candidate_count=a_count,
                 subject_override=email_subject,
             )
