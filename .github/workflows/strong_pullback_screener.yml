@@ -33,7 +33,7 @@ jobs:
           EMAIL_SUBJECT: ${{ secrets.EMAIL_SUBJECT }}
           SEND_EMAIL: "true"
         run: |
-          python main.py --send-email --top-buy 10 --top-watch 20 --min-rs-score 70
+          python main.py --send-email --top-buy 5 --top-watch 5 --min-rs-score 70
 
       - name: Upload report artifacts
         if: always()
@@ -41,5 +41,8 @@ jobs:
         with:
           name: strong-pullback-report
           path: |
-            output/strong_pullback_candidates.csv
-            output/strong_pullback_report.md
+            output/**
+            **/strong_pullback_candidates.csv
+            **/strong_pullback_report.md
+            *.csv
+            *.md
