@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import smtplib
+import sys
 from dataclasses import dataclass
 from email.message import EmailMessage
 from pathlib import Path
@@ -85,6 +86,7 @@ def send_report_email(
 ) -> None:
     config = load_email_config()
     subject = build_subject(config.subject_base, a_candidate_count)
+    print(f"Sending email to: {', '.join(config.email_to)}")
 
     message = EmailMessage()
     message["From"] = config.smtp_user
@@ -103,15 +105,21 @@ def send_report_email(
             filename=path.name,
         )
 
-    if config.smtp_port == 465:
-        with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=30) as smtp:
+    try:
+        if config.smtp_port == 465:
+            with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=30) as smtp:
+                smtp.login(config.smtp_user, config.smtp_password)
+                smtp.send_message(message)
+            print("Email sent successfully")
+            return
+
+        with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
             smtp.login(config.smtp_user, config.smtp_password)
             smtp.send_message(message)
-        return
-
-    with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=30) as smtp:
-        smtp.ehlo()
-        smtp.starttls()
-        smtp.ehlo()
-        smtp.login(config.smtp_user, config.smtp_password)
-        smtp.send_message(message)
+        print("Email sent successfully")
+    except Exception as exc:
+        print(f"Email send failed: {exc!r}", file=sys.stderr)
+        raise

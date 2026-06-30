@@ -21,6 +21,34 @@ Reports are written to:
 - `output/strong_pullback_candidates.csv`
 - `output/strong_pullback_report.md`
 
+## Custom Bottom Signals
+
+V2 uses daily EMA23/EMA89 for position, 2H bottom signals for A-list entries, and 1H bottom signals only as early warnings.
+
+If you can export your own indicator's bottom signals, provide a CSV with:
+
+```csv
+symbol,timeframe,bottom_signal
+MU,2H,true
+MU,1H,true
+AMD,2H,false
+AMD,1H,true
+```
+
+Run with:
+
+```bash
+python main.py --bottom-signal-file data/bottom_signals.csv
+```
+
+If `--bottom-signal-file` is not passed, the script automatically looks for:
+
+- `data/bottom_signals.csv`
+- `signals/bottom_signals.csv`
+- `bottom_signals.csv`
+
+If no signal file is found, the system uses a proxy signal based on RSI recovery and reclaiming EMA23. Proxy signals are marked in the report and are not treated as real bottom signals.
+
 ## GitHub Actions
 
 The workflow is in `.github/workflows/strong_pullback_screener.yml`.
@@ -69,7 +97,9 @@ The screener focuses on:
 
 - strong themes
 - strong individual stocks
-- daily uptrends
-- 1H pullbacks
+- daily EMA23 above EMA89
+- price near daily EMA23
+- 2H bottom confirmation
+- 1H early warning only
 
 It avoids weak-stock bottom fishing, crash rebounds, and overheated chase entries.
