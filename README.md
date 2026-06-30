@@ -20,34 +20,23 @@ Reports are written to:
 
 - `output/strong_pullback_candidates.csv`
 - `output/strong_pullback_report.md`
+- `output/strong_pullback_report.txt`
 
-## Custom Bottom Signals
+The email body uses the same compact plain text as `strong_pullback_report.txt`.
+It does not send the full Markdown report as the message body.
 
-V2 uses daily EMA23/EMA89 for position, 2H bottom signals for A-list entries, and 1H bottom signals only as early warnings.
+## V3 Signal Rules
 
-If you can export your own indicator's bottom signals, provide a CSV with:
+V3 uses two indicator sources with different jobs:
 
-```csv
-symbol,timeframe,bottom_signal
-MU,2H,true
-MU,1H,true
-AMD,2H,false
-AMD,1H,true
-```
+- `cd.docx`: real MACD bottom/sell signals.
+  - `bottom_signal = DXDX`
+  - `sell_signal = DBJGXC`
+- `NXCD002`: blue/yellow trend channel.
+  - Blue channel: `UP1 = EMA(HIGH, 23)`, `DW1 = EMA(LOW, 23)`
+  - Yellow channel: `UP2 = EMA(HIGH, 89)`, `DW2 = EMA(LOW, 89)`
 
-Run with:
-
-```bash
-python main.py --bottom-signal-file data/bottom_signals.csv
-```
-
-If `--bottom-signal-file` is not passed, the script automatically looks for:
-
-- `data/bottom_signals.csv`
-- `signals/bottom_signals.csv`
-- `bottom_signals.csv`
-
-If no signal file is found, the system uses a proxy signal based on RSI recovery and reclaiming EMA23. Proxy signals are marked in the report and are not treated as real bottom signals.
+The formulas are implemented in code. No external `bottom_signals.csv` is required.
 
 ## GitHub Actions
 
@@ -97,9 +86,10 @@ The screener focuses on:
 
 - strong themes
 - strong individual stocks
-- daily EMA23 above EMA89
-- price near daily EMA23
-- 2H bottom confirmation
-- 1H early warning only
+- daily blue channel above yellow channel
+- price near daily blue lower edge `DW1`
+- 2H real `DXDX` bottom signal
+- 1H real `DXDX` only as early warning
+- proxy warning only as auxiliary observation, never as A-list evidence
 
 It avoids weak-stock bottom fishing, crash rebounds, and overheated chase entries.

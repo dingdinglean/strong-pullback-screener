@@ -21,6 +21,7 @@ from email_sender import EmailConfigError, send_report_email
 OUTPUT_DIR = Path("output")
 CSV_PATH = OUTPUT_DIR / "strong_pullback_candidates.csv"
 MD_PATH = OUTPUT_DIR / "strong_pullback_report.md"
+TXT_PATH = OUTPUT_DIR / "strong_pullback_report.txt"
 BENCHMARK = "SPY"
 TOP_STRONG_STOCKS = 50
 REPORT_LIMIT = 5
@@ -131,25 +132,15 @@ class HistoryResult:
     price_invalid: bool = False
 
 
-@dataclass(frozen=True)
-class BottomSignalStore:
-    signals: dict[tuple[str, str], bool]
-    source_path: Path | None = None
-
-    def get(self, symbol: str, timeframe: str) -> bool | None:
-        return self.signals.get((symbol.upper(), timeframe.upper()))
-
-    @property
-    def has_real_signals(self) -> bool:
-        return bool(self.signals)
-
-
 @dataclass
 class IntradaySetup:
     early_signal_1h: bool = False
-    early_signal_1h_source: str = "none"
+    early_signal_1h_source: str = "DXDX"
     two_hour_bottom_signal: bool = False
-    two_hour_signal_source: str = "none"
+    two_hour_signal_source: str = "DXDX"
+    proxy_warning: bool = False
+    sell_signal_1h: bool = False
+    sell_signal_2h: bool = False
     rsi_1h: float = 50.0
     rsi_2h: float = 50.0
     ema23_2h_slope_5: float = 0.0
@@ -174,6 +165,15 @@ class DailyMetrics:
     ema23: float = 0.0
     ema89: float = 0.0
     ema23_slope_5: float = 0.0
+    up1: float = 0.0
+    dw1: float = 0.0
+    up2: float = 0.0
+    dw2: float = 0.0
+    blue_channel_above_yellow: bool = False
+    up1_gt_up2: bool = False
+    blue_channel_slope_up: bool = False
+    distance_blue_lower_pct: float = 0.0
+    distance_blue_lower_abs_pct: float = 0.0
     rsi14: float = 0.0
     distance_ema23_pct: float = 0.0
     distance_ema23_abs_pct: float = 0.0
@@ -201,6 +201,15 @@ class ScreenedStock:
     rs_score: float
     ema23: float
     ema89: float
+    up1: float
+    dw1: float
+    up2: float
+    dw2: float
+    blue_channel_above_yellow: bool
+    up1_gt_up2: bool
+    blue_channel_slope_up: bool
+    distance_blue_lower_pct: float
+    distance_blue_lower_abs_pct: float
     distance_ema23_pct: float
     distance_ema23_abs_pct: float
     distance_52w_high_pct: float
@@ -213,6 +222,9 @@ class ScreenedStock:
     early_signal_1h_source: str
     two_hour_bottom_signal: bool
     two_hour_signal_source: str
+    proxy_warning: bool
+    sell_signal_1h: bool
+    sell_signal_2h: bool
     rsi_1h: float
     rsi_2h: float
     overheated: bool
@@ -238,12 +250,6 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="optional CSV with symbol,theme columns",
     )
-    parser.add_argument(
-        "--bottom-signal-file",
-        type=Path,
-        default=None,
-        help="optional CSV with symbol,timeframe,bottom_signal columns for real indicator signals",
-    )
     return parser.parse_args()
 
 
@@ -264,60 +270,6 @@ def load_universe(path: Path | None) -> dict[str, str]:
     if not universe:
         raise ValueError("universe file did not contain any symbols")
     return universe
-
-
-def parse_bool(value: object) -> bool:
-    if isinstance(value, bool):
-        return value
-    if value is None:
-        return False
-    return str(value).strip().lower() in {"1", "true", "yes", "y", "on", "是", "真"}
-
-
-def discover_bottom_signal_file(path: Path | None) -> Path | None:
-    if path is not None:
-        return path
-    for candidate in (
-        Path("data/bottom_signals.csv"),
-        Path("signals/bottom_signals.csv"),
-        Path("bottom_signals.csv"),
-    ):
-        if candidate.exists():
-            return candidate
-    return None
-
-
-def load_bottom_signal_store(path: Path | None) -> BottomSignalStore:
-    signal_path = discover_bottom_signal_file(path)
-    if signal_path is None:
-        return BottomSignalStore(signals={})
-    if not signal_path.exists():
-        raise FileNotFoundError(f"bottom signal file not found: {signal_path}")
-
-    signals: dict[tuple[str, str], bool] = {}
-    with signal_path.open("r", encoding="utf-8-sig", newline="") as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            symbol = (row.get("symbol") or row.get("ticker") or "").strip().upper()
-            timeframe = (
-                row.get("timeframe")
-                or row.get("interval")
-                or row.get("tf")
-                or ""
-            ).strip().upper()
-            raw_signal = (
-                row.get("bottom_signal")
-                or row.get("bottom")
-                or row.get("signal")
-                or row.get("抄底")
-            )
-            if not symbol or timeframe not in {"1H", "2H"}:
-                continue
-            signals[(symbol, timeframe)] = parse_bool(raw_signal)
-
-    if not signals:
-        raise ValueError("bottom signal file has no usable 1H/2H signals")
-    return BottomSignalStore(signals=signals, source_path=signal_path)
 
 
 def is_valid_number(value: float) -> bool:
@@ -352,6 +304,161 @@ def slope(series, periods: int = 5) -> float:
     if len(clean) <= periods:
         return 0.0
     return float(clean.iloc[-1] - clean.iloc[-periods - 1])
+
+
+def ref_array(values, periods=1, default=float("nan")):
+    import numpy as np
+
+    arr = np.asarray(values)
+    if np.isscalar(periods):
+        periods_arr = np.full(len(arr), int(periods), dtype=int)
+    else:
+        periods_arr = np.asarray(periods).astype(int)
+
+    result = np.full(len(arr), default, dtype=object)
+    for index, period in enumerate(periods_arr):
+        source_index = index - max(0, int(period))
+        if source_index >= 0:
+            result[index] = arr[source_index]
+    return result
+
+
+def ref_bool(values, periods=1):
+    return ref_array(values, periods, default=False).astype(bool)
+
+
+def ref_float(values, periods=1):
+    import numpy as np
+
+    return np.asarray(ref_array(values, periods, default=np.nan), dtype=float)
+
+
+def barslast_safe(condition, lookback: int = 100):
+    import numpy as np
+
+    cond = np.asarray(condition, dtype=bool)
+    result = np.zeros(len(cond), dtype=int)
+    last_true = -1
+    for index, value in enumerate(cond):
+        if value:
+            last_true = index
+        window_start = max(0, index - lookback + 1)
+        if last_true >= window_start:
+            result[index] = index - last_true
+        else:
+            result[index] = 0
+    return result
+
+
+def rolling_count_bool(condition, window: int):
+    import numpy as np
+
+    cond = np.asarray(condition, dtype=bool)
+    result = np.zeros(len(cond), dtype=int)
+    for index in range(len(cond)):
+        start = max(0, index - window + 1)
+        result[index] = int(cond[start : index + 1].sum())
+    return result
+
+
+def dynamic_lowest(values, lengths):
+    import numpy as np
+
+    arr = np.asarray(values, dtype=float)
+    lens = np.asarray(lengths).astype(int)
+    result = np.full(len(arr), np.nan, dtype=float)
+    for index, length in enumerate(lens):
+        length = max(1, int(length))
+        start = max(0, index - length + 1)
+        result[index] = float(np.nanmin(arr[start : index + 1]))
+    return result
+
+
+def dynamic_highest(values, lengths):
+    import numpy as np
+
+    arr = np.asarray(values, dtype=float)
+    lens = np.asarray(lengths).astype(int)
+    result = np.full(len(arr), np.nan, dtype=float)
+    for index, length in enumerate(lens):
+        length = max(1, int(length))
+        start = max(0, index - length + 1)
+        result[index] = float(np.nanmax(arr[start : index + 1]))
+    return result
+
+
+def compute_cd_docx_signals(data) -> dict[str, bool]:
+    import numpy as np
+
+    close_series = data["Close"].astype(float)
+    if len(close_series) < 60:
+        return {"bottom_signal": False, "sell_signal": False}
+
+    close = close_series.to_numpy(dtype=float)
+    diff_series = close_series.ewm(span=12, adjust=False).mean() - close_series.ewm(span=26, adjust=False).mean()
+    dea_series = diff_series.ewm(span=9, adjust=False).mean()
+    diff = diff_series.to_numpy(dtype=float)
+    dea = dea_series.to_numpy(dtype=float)
+    macd = (diff - dea) * 2
+
+    ref_macd_1 = ref_float(macd, 1)
+    neg_cross = (ref_macd_1 >= 0) & (macd < 0)
+    pos_cross = (ref_macd_1 <= 0) & (macd > 0)
+    n1 = barslast_safe(neg_cross, 100)
+    mm1 = barslast_safe(pos_cross, 100)
+
+    cc1 = dynamic_lowest(close, n1 + 1)
+    cc2 = ref_float(cc1, np.maximum(1, mm1 + 1))
+    cc3 = ref_float(cc2, np.maximum(1, mm1 + 1))
+    difl1 = dynamic_lowest(diff, n1 + 1)
+    difl2 = ref_float(difl1, np.maximum(1, mm1 + 1))
+    difl3 = ref_float(difl2, np.maximum(1, mm1 + 1))
+
+    ch1 = dynamic_highest(close, mm1 + 1)
+    ch2 = ref_float(ch1, np.maximum(1, n1 + 1))
+    ch3 = ref_float(ch2, np.maximum(1, n1 + 1))
+    difh1 = dynamic_highest(diff, mm1 + 1)
+    difh2 = ref_float(difh1, np.maximum(1, n1 + 1))
+    difh3 = ref_float(difh2, np.maximum(1, n1 + 1))
+
+    ref_diff_1 = ref_float(diff, 1)
+    aaa = (cc1 < cc2) & (difl1 > difl2) & (ref_macd_1 < 0) & (diff < 0)
+    bbb = (cc1 < cc3) & (difl1 < difl2) & (difl1 > difl3) & (ref_macd_1 < 0) & (diff < 0)
+    ccc = (aaa | bbb) & (diff < 0)
+    lll = (~ref_bool(ccc, 1)) & ccc
+    xxx = (
+        ref_bool(aaa, 1) & (difl1 <= difl2) & (diff < dea)
+    ) | (
+        ref_bool(bbb, 1) & (difl1 <= difl3) & (diff < dea)
+    )
+    jjj = ref_bool(ccc, 1) & (np.abs(ref_diff_1) >= (np.abs(diff) * 1.01))
+    dxdx = (~ref_bool(jjj, 1)) & jjj
+
+    ref_jjj_mm1_plus = ref_bool(jjj, mm1 + 1)
+    ref_jjj_mm1 = ref_bool(jjj, mm1)
+    djgxx = (
+        ((close < cc2) | (close < cc1))
+        & ((ref_jjj_mm1_plus | ref_jjj_mm1) & (~ref_bool(lll, 1)) & (rolling_count_bool(jjj, 24) >= 1))
+    )
+    djxx = (~(rolling_count_bool(ref_bool(djgxx, 1), 2) >= 1)) & djgxx
+    _dxx = (xxx | djxx) & (~ccc)
+
+    zjdbl = (ch1 > ch2) & (difh1 < difh2) & (ref_macd_1 > 0) & (diff > 0)
+    gxdbl = (ch1 > ch3) & (difh1 > difh2) & (difh1 < difh3) & (ref_macd_1 > 0) & (diff > 0)
+    dbbl = (zjdbl | gxdbl) & (diff > 0)
+    _dbl = (~ref_bool(dbbl, 1)) & dbbl & (diff > dea)
+    _dblxs = (
+        ref_bool(zjdbl, 1) & (difh1 >= difh2) & (diff > dea)
+    ) | (
+        ref_bool(gxdbl, 1) & (difh1 >= difh3) & (diff > dea)
+    )
+    dbjg = ref_bool(dbbl, 1) & (ref_diff_1 >= (diff * 1.01))
+    dbjgxc = ref_bool(~dbjg, 1) & dbjg
+
+    return {
+        "bottom_signal": bool(dxdx[-1]),
+        "sell_signal": bool(dbjgxc[-1]),
+    }
 
 
 def fetch_yfinance_history(symbol: str, period: str, interval: str, attempts: int = 3):
@@ -489,6 +596,16 @@ def compute_daily_metrics(symbol: str, theme: str, benchmark_returns: dict[str, 
     ema89_series = close.ewm(span=89, adjust=False).mean()
     ema23 = float(ema23_series.iloc[-1])
     ema89 = float(ema89_series.iloc[-1])
+    high = data["High"] if "High" in data else close
+    low = data["Low"] if "Low" in data else close
+    up1_series = high.ewm(span=23, adjust=False).mean()
+    dw1_series = low.ewm(span=23, adjust=False).mean()
+    up2_series = high.ewm(span=89, adjust=False).mean()
+    dw2_series = low.ewm(span=89, adjust=False).mean()
+    up1 = float(up1_series.iloc[-1])
+    dw1 = float(dw1_series.iloc[-1])
+    up2 = float(up2_series.iloc[-1])
+    dw2 = float(dw2_series.iloc[-1])
     current_close = float(close.iloc[-1])
     high_52w = float(close.tail(min(252, len(close))).max())
     rolling_peak = close.cummax()
@@ -506,14 +623,19 @@ def compute_daily_metrics(symbol: str, theme: str, benchmark_returns: dict[str, 
     descending_channel = ema23_slope_5 < 0 or (recent_high < previous_high and recent_low < previous_low)
 
     distance_ema23_pct = (current_close / ema23 - 1) * 100
+    distance_blue_lower_pct = ((current_close - dw1) / dw1) * 100 if dw1 else 999.0
     distance_52w_high_pct = (current_close / high_52w - 1) * 100
     ema23_gt_ema89 = ema23 > ema89
     close_gt_ema89 = current_close > ema89
+    blue_channel_above_yellow = dw1 > dw2
+    up1_gt_up2 = up1 > up2
+    blue_channel_slope_up = slope(up1_series, 5) >= 0 and slope(dw1_series, 5) >= 0
     repair_profile = (
         max_drawdown_pct <= -25
         and distance_52w_high_pct <= -12
-        and ema23_gt_ema89
-        and close_gt_ema89
+        and blue_channel_above_yellow
+        and up1_gt_up2
+        and current_close >= dw1 * 0.97
         and higher_lows
     )
 
@@ -532,6 +654,15 @@ def compute_daily_metrics(symbol: str, theme: str, benchmark_returns: dict[str, 
         ema23=ema23,
         ema89=ema89,
         ema23_slope_5=ema23_slope_5,
+        up1=up1,
+        dw1=dw1,
+        up2=up2,
+        dw2=dw2,
+        blue_channel_above_yellow=blue_channel_above_yellow,
+        up1_gt_up2=up1_gt_up2,
+        blue_channel_slope_up=blue_channel_slope_up,
+        distance_blue_lower_pct=distance_blue_lower_pct,
+        distance_blue_lower_abs_pct=abs(distance_blue_lower_pct),
         rsi14=latest_rsi(close),
         distance_ema23_pct=distance_ema23_pct,
         distance_ema23_abs_pct=abs(distance_ema23_pct),
@@ -560,7 +691,7 @@ def resample_to_2h(data):
     return data.resample("2h").agg(agg).dropna(subset=["Close"])
 
 
-def compute_intraday_setup(symbol: str, bottom_signals: BottomSignalStore) -> IntradaySetup:
+def compute_intraday_setup(symbol: str) -> IntradaySetup:
     try:
         data_1h = fetch_yfinance_history(symbol, period="60d", interval="1h", attempts=2)
     except Exception as exc:
@@ -573,25 +704,22 @@ def compute_intraday_setup(symbol: str, bottom_signals: BottomSignalStore) -> In
     ema23_1h = close_1h.ewm(span=23, adjust=False).mean()
     rsi_1h_series = rsi_series(close_1h, 14)
     rsi_1h = float(rsi_1h_series.iloc[-1])
-    proxy_1h = (
+    proxy_warning_1h = (
         float(rsi_1h_series.tail(10).min()) < 45
         and rsi_1h > 45
         and float(close_1h.iloc[-1]) > float(ema23_1h.iloc[-1])
     )
-    real_1h = bottom_signals.get(symbol, "1H")
-    if bottom_signals.has_real_signals:
-        early_signal_1h = bool(real_1h) if real_1h is not None else False
-        early_signal_1h_source = "custom" if real_1h is not None else "missing_custom"
-    else:
-        early_signal_1h = proxy_1h
-        early_signal_1h_source = "proxy"
+    one_hour_signals = compute_cd_docx_signals(data_1h)
+    early_signal_1h = one_hour_signals["bottom_signal"]
+    sell_signal_1h = one_hour_signals["sell_signal"]
 
     data_2h = resample_to_2h(data_1h)
     close_2h = data_2h["Close"]
     if len(close_2h) < 30:
         return IntradaySetup(
             early_signal_1h=bool(early_signal_1h),
-            early_signal_1h_source=early_signal_1h_source,
+            proxy_warning=bool(proxy_warning_1h),
+            sell_signal_1h=bool(sell_signal_1h),
             rsi_1h=rsi_1h,
             warning="2H数据不足，无法确认回踩",
         )
@@ -602,26 +730,25 @@ def compute_intraday_setup(symbol: str, bottom_signals: BottomSignalStore) -> In
     rsi_2h = float(rsi_2h_series.iloc[-1])
     ema23_2h_slope = slope(ema23_2h, 5)
     distance_2h_ema23_pct = (float(close_2h.iloc[-1]) / float(ema23_2h.iloc[-1]) - 1) * 100
-    proxy_2h = (
+    proxy_warning_2h = (
         float(rsi_2h_series.tail(10).min()) < 45
         and rsi_2h > 45
         and float(close_2h.iloc[-1]) > float(ema23_2h.iloc[-1])
         and ema23_2h_slope >= 0
     )
-    real_2h = bottom_signals.get(symbol, "2H")
-    if bottom_signals.has_real_signals:
-        two_hour_bottom_signal = bool(real_2h) if real_2h is not None else False
-        two_hour_signal_source = "custom" if real_2h is not None else "missing_custom"
-    else:
-        two_hour_bottom_signal = proxy_2h
-        two_hour_signal_source = "proxy"
+    two_hour_signals = compute_cd_docx_signals(data_2h)
+    two_hour_bottom_signal = two_hour_signals["bottom_signal"]
+    sell_signal_2h = two_hour_signals["sell_signal"]
     overheated_2h = rsi_2h > 72 or distance_2h_ema23_pct > 8 or float(close_2h.iloc[-1]) > float(ema89_2h.iloc[-1]) * 1.18
 
     return IntradaySetup(
         early_signal_1h=bool(early_signal_1h),
-        early_signal_1h_source=early_signal_1h_source,
+        early_signal_1h_source="DXDX",
         two_hour_bottom_signal=bool(two_hour_bottom_signal),
-        two_hour_signal_source=two_hour_signal_source,
+        two_hour_signal_source="DXDX",
+        proxy_warning=bool(proxy_warning_1h or proxy_warning_2h),
+        sell_signal_1h=bool(sell_signal_1h),
+        sell_signal_2h=bool(sell_signal_2h),
         rsi_1h=rsi_1h,
         rsi_2h=rsi_2h,
         ema23_2h_slope_5=ema23_2h_slope,
@@ -667,15 +794,19 @@ def classify_stock(
     item: DailyMetrics,
     strong_themes: set[str],
     min_rs_score: float,
-    bottom_signals: BottomSignalStore,
 ) -> ScreenedStock:
-    intraday = compute_intraday_setup(item.symbol, bottom_signals)
+    intraday = compute_intraday_setup(item.symbol)
     rs_ok = item.rs_score >= min_rs_score
     in_strong_theme = item.theme in strong_themes
-    daily_position_ok = item.ema23_gt_ema89 and item.close_gt_ema89 and not item.descending_channel
-    distance_ok_for_a = item.distance_ema23_abs_pct <= 7
-    overheated = item.distance_ema23_pct > 10 or item.rsi14 > 75 or intraday.overheated_2h
-    grade = setup_grade(item.distance_ema23_abs_pct, intraday.two_hour_bottom_signal, intraday.early_signal_1h)
+    daily_position_ok = (
+        item.blue_channel_above_yellow
+        and item.up1_gt_up2
+        and item.blue_channel_slope_up
+        and not item.descending_channel
+    )
+    distance_ok_for_a = item.distance_blue_lower_abs_pct <= 7
+    overheated = item.distance_blue_lower_pct > 10 or item.rsi14 > 75 or intraday.overheated_2h or intraday.sell_signal_2h
+    grade = setup_grade(item.distance_blue_lower_abs_pct, intraday.two_hour_bottom_signal, intraday.early_signal_1h)
 
     warning_parts = [part for part in [item.data_warning, intraday.warning] if part]
     data_warning = "；".join(warning_parts)
@@ -718,7 +849,7 @@ def classify_stock(
             setup_grade=grade,
             overheated=overheated,
             data_warning=data_warning,
-            reason="主线强股，日线贴近EMA23，2H抄底信号已出现",
+            reason="主线强股，日线蓝色通道在黄色通道上方，靠近DW1，2H真实DXDX抄底",
         )
     if a2:
         return screened_from_parts(
@@ -733,19 +864,21 @@ def classify_stock(
         )
 
     reasons = []
-    if overheated or item.distance_ema23_abs_pct > 10:
-        reasons.append("距离日线EMA23偏远/过热，不追")
+    if overheated or item.distance_blue_lower_abs_pct > 10:
+        reasons.append("距离日线蓝色下边缘DW1偏远/过热，或出现卖出信号，不追")
         list_name = "C"
         setup_class = "OVERHEATED"
-    elif rs_ok and daily_position_ok and (intraday.early_signal_1h or item.distance_ema23_abs_pct <= 10):
+    elif rs_ok and daily_position_ok and (intraday.early_signal_1h or intraday.proxy_warning or item.distance_blue_lower_abs_pct <= 10):
         if in_strong_theme and not intraday.two_hour_bottom_signal:
-            reasons.append("主线内强股，但2H抄底未出现")
+            reasons.append("主线内强股，但2H真实DXDX抄底未出现")
         elif not in_strong_theme:
             reasons.append("个股强，但主题不是今日主线")
         if intraday.early_signal_1h and not intraday.two_hour_bottom_signal:
-            reasons.append("只有1H抄底/预警，先观察")
-        if 7 < item.distance_ema23_abs_pct <= 10:
-            reasons.append("距离日线EMA23为7%到10%，降级观察")
+            reasons.append("只有1H真实DXDX抄底，先观察")
+        if intraday.proxy_warning and not intraday.two_hour_bottom_signal:
+            reasons.append("只有proxy预警，不能进A榜")
+        if 7 < item.distance_blue_lower_abs_pct <= 10:
+            reasons.append("距离日线蓝色下边缘DW1为7%到10%，降级观察")
         if item.repair_profile:
             reasons.append("修复转强股，等待2H抄底后再看小仓")
         list_name = "B"
@@ -754,11 +887,11 @@ def classify_stock(
         if not rs_ok:
             reasons.append("RS不足")
         if not daily_position_ok:
-            reasons.append("日线位置不合格")
+            reasons.append("日线蓝黄通道位置不合格")
         if item.descending_channel:
             reasons.append("仍有下降通道特征")
         if not intraday.two_hour_bottom_signal:
-            reasons.append("2H抄底未出现")
+            reasons.append("2H真实DXDX抄底未出现")
         list_name = "DROPPED"
         setup_class = "DROPPED"
 
@@ -797,6 +930,15 @@ def screened_from_parts(
         rs_score=item.rs_score,
         ema23=item.ema23,
         ema89=item.ema89,
+        up1=item.up1,
+        dw1=item.dw1,
+        up2=item.up2,
+        dw2=item.dw2,
+        blue_channel_above_yellow=item.blue_channel_above_yellow,
+        up1_gt_up2=item.up1_gt_up2,
+        blue_channel_slope_up=item.blue_channel_slope_up,
+        distance_blue_lower_pct=item.distance_blue_lower_pct,
+        distance_blue_lower_abs_pct=item.distance_blue_lower_abs_pct,
         distance_ema23_pct=item.distance_ema23_pct,
         distance_ema23_abs_pct=item.distance_ema23_abs_pct,
         distance_52w_high_pct=item.distance_52w_high_pct,
@@ -809,6 +951,9 @@ def screened_from_parts(
         early_signal_1h_source=intraday.early_signal_1h_source,
         two_hour_bottom_signal=intraday.two_hour_bottom_signal,
         two_hour_signal_source=intraday.two_hour_signal_source,
+        proxy_warning=intraday.proxy_warning,
+        sell_signal_1h=intraday.sell_signal_1h,
+        sell_signal_2h=intraday.sell_signal_2h,
         rsi_1h=intraday.rsi_1h,
         rsi_2h=intraday.rsi_2h,
         overheated=overheated,
@@ -821,7 +966,6 @@ def screen_market(
     top_buy: int,
     top_watch: int,
     min_rs_score: float,
-    bottom_signals: BottomSignalStore,
 ) -> tuple[list[ScreenedStock], list[dict[str, object]], list[str]]:
     errors: list[str] = []
     try:
@@ -853,7 +997,7 @@ def screen_market(
     top_themes = top_themes_from_market(metrics)
     strong_themes = {str(row["theme"]) for row in top_themes}
     top_market = sorted(metrics, key=lambda item: item.rs_score, reverse=True)[:TOP_STRONG_STOCKS]
-    screened = [classify_stock(item, strong_themes, min_rs_score, bottom_signals) for item in top_market]
+    screened = [classify_stock(item, strong_themes, min_rs_score) for item in top_market]
 
     return sort_screened_rows(screened, top_buy, top_watch), top_themes, errors
 
@@ -868,16 +1012,16 @@ def sort_screened_rows(rows: list[ScreenedStock], top_buy: int, top_watch: int) 
             class_order.get(row.setup_class, 9),
             grade_order.get(row.setup_grade, 9),
             -row.rs_score,
-            row.distance_ema23_abs_pct,
+            row.distance_blue_lower_abs_pct,
         ),
     )[: min(top_buy, REPORT_LIMIT)]
     b_rows = sorted(
         (row for row in rows if row.list_name == "B"),
-        key=lambda row: (not row.early_signal_1h, row.distance_ema23_abs_pct, -row.rs_score),
+        key=lambda row: (not row.early_signal_1h, not row.proxy_warning, row.distance_blue_lower_abs_pct, -row.rs_score),
     )[: min(top_watch, REPORT_LIMIT)]
     c_rows = sorted(
         (row for row in rows if row.list_name == "C"),
-        key=lambda row: (-row.rs_score, -row.distance_ema23_abs_pct),
+        key=lambda row: (-row.rs_score, -row.distance_blue_lower_abs_pct),
     )[:REPORT_LIMIT]
     data_rows = sorted(
         (row for row in rows if row.list_name == "DATA_WARNING"),
@@ -941,7 +1085,7 @@ def build_report(
     data_rows = [row for row in rows if row.list_name == "DATA_WARNING"]
 
     sections = [
-        "# 强势股回踩系统 V2",
+        "# 强势股回踩系统 V3",
         f"生成时间：{generated_at}｜最低RS：{min_rs_score:.0f}",
         "## 今日结论\n" + "\n".join(build_conclusion_lines(top_themes, a_rows, b_rows, c_rows)),
         "## 强势主题Top 3\n" + build_theme_lines(top_themes),
@@ -953,6 +1097,140 @@ def build_report(
         "## 免责声明\n" + "\n".join(DISCLAIMER_LINES),
     ]
     return "\n\n".join(sections) + "\n"
+
+
+def build_plain_text_report(
+    rows: list[ScreenedStock],
+    top_themes: list[dict[str, object]],
+) -> str:
+    a_rows = [row for row in rows if row.list_name == "A"][:3]
+    b_rows = [row for row in rows if row.list_name == "B"][:3]
+    c_rows = [row for row in rows if row.list_name == "C"][:2]
+
+    lines = [
+        "【强势股回踩 V3】",
+        "今日结论：",
+        build_plain_focus_line(a_rows),
+        build_plain_far_line([*b_rows, *c_rows]),
+        build_plain_signal_line(a_rows),
+        "主线：" + build_plain_theme_line(top_themes),
+        "A榜：",
+    ]
+    lines.extend(build_plain_a_lines(a_rows))
+    lines.append("B榜：")
+    lines.extend(build_plain_b_lines(b_rows))
+    lines.append("不追：")
+    lines.extend(build_plain_c_lines(c_rows))
+    lines.extend(build_plain_risk_lines())
+    return "\n".join(lines[:20]) + "\n"
+
+
+def build_plain_focus_line(a_rows: list[ScreenedStock]) -> str:
+    if not a_rows:
+        return "今日没有A榜，宁可空手。"
+    symbols = "、".join(row.symbol for row in a_rows)
+    return f"只看 {symbols}。"
+
+
+def build_plain_far_line(rows: list[ScreenedStock]) -> str:
+    far_symbols = [row.symbol for row in rows if row.distance_blue_lower_abs_pct > 7]
+    if not far_symbols:
+        return "距离DW1超过7%的票不进A榜。"
+    return f"{'、'.join(far_symbols[:4])} 距离DW1偏远，不追。"
+
+
+def build_plain_signal_line(a_rows: list[ScreenedStock]) -> str:
+    if a_rows:
+        return "A榜都满足：日线靠近DW1 + 2H真实DXDX抄底。"
+    return "当前没有2H真实DXDX抄底，A榜为空。"
+
+
+def build_plain_theme_line(top_themes: list[dict[str, object]]) -> str:
+    if not top_themes:
+        return "数据不足，暂不判断。"
+    labels = []
+    for index, row in enumerate(top_themes[:3], start=1):
+        suffix = "最强" if index == 1 else "第二" if index == 2 else "第三"
+        labels.append(f"{index}、{row['theme']}{suffix}")
+    return "；".join(labels) + "。"
+
+
+def build_plain_a_lines(rows: list[ScreenedStock]) -> list[str]:
+    if not rows:
+        return ["无。"]
+    lines = []
+    for index, row in enumerate(rows, start=1):
+        lines.append(
+            f"{index}、{row.symbol}｜{plain_type_label(row)}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}"
+            f"｜2H真实抄底：{yes_no(row.two_hour_bottom_signal)}｜1H真实抄底：{yes_no(row.early_signal_1h)}"
+            f"｜proxy预警：{yes_no(row.proxy_warning)}｜{plain_action_label(row)}。"
+        )
+    return lines
+
+
+def build_plain_b_lines(rows: list[ScreenedStock]) -> list[str]:
+    if not rows:
+        return ["无。"]
+    return [
+        f"{row.symbol}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}，{plain_reason(row)}。"
+        for row in rows
+    ]
+
+
+def build_plain_c_lines(rows: list[ScreenedStock]) -> list[str]:
+    if not rows:
+        return ["无。"]
+    return [
+        f"{row.symbol}｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}，太远/不追。"
+        for row in rows
+    ]
+
+
+def build_plain_risk_lines() -> list[str]:
+    return [
+        "风险：proxy只作为辅助预警，不能作为A榜依据。",
+        "真实抄底来自 cd.docx 的 DXDX，卖出来自 DBJGXC。",
+        "真实买点必须：日线蓝线在黄线上方 + 靠近DW1 + 2H真实DXDX。",
+    ]
+
+
+def plain_type_label(row: ScreenedStock) -> str:
+    if row.setup_class == "A1_MAIN_LEADER":
+        return "主线强股"
+    if row.setup_class == "A2_REPAIR_LEADER":
+        return "修复转强"
+    return row_type_label(row)
+
+
+def plain_2h_label(row: ScreenedStock) -> str:
+    return "2H真实" if row.two_hour_bottom_signal else "2H否"
+
+
+def plain_action_label(row: ScreenedStock) -> str:
+    if row.setup_class == "A2_REPAIR_LEADER":
+        return "小仓观察"
+    return "观察"
+
+
+def plain_reason(row: ScreenedStock) -> str:
+    if row.setup_class == "A2_REPAIR_LEADER" or "修复" in row.downgrade_reason:
+        return "修复股，小仓观察"
+    if row.distance_blue_lower_abs_pct > 7:
+        return "偏远，等回踩"
+    if "主题不是今日主线" in row.downgrade_reason:
+        return "不是今日主线，观察"
+    if row.early_signal_1h and not row.two_hour_bottom_signal:
+        return "只有1H真实抄底，等2H"
+    if row.proxy_warning and not row.two_hour_bottom_signal:
+        return "只有proxy预警，不能进A榜"
+    return row.downgrade_reason.split("；")[0]
+
+
+def build_email_subject(rows: list[ScreenedStock]) -> str:
+    a_symbols = [row.symbol for row in rows if row.list_name == "A"][:3]
+    if a_symbols:
+        return f"【真实抄底】强势股回踩 V3：{'、'.join(a_symbols)}"
+    return "【观察版】强势股回踩 V3：无真实2H抄底"
 
 
 def build_conclusion_lines(
@@ -976,12 +1254,12 @@ def build_conclusion_lines(
     else:
         lines.append("2、A榜暂无主线强股的舒服买点。")
 
-    far_rows = [row for row in [*b_rows, *c_rows] if row.distance_ema23_abs_pct > 7]
+    far_rows = [row for row in [*b_rows, *c_rows] if row.distance_blue_lower_abs_pct > 7]
     if far_rows:
         examples = "、".join(row.symbol for row in far_rows[:3])
-        lines.append(f"3、{examples}距离日线EMA23偏远，降级观察或不追。")
+        lines.append(f"3、{examples}距离日线蓝色下边缘DW1偏远，降级观察或不追。")
     else:
-        lines.append("3、距离日线EMA23超过7%的票不会进入A榜。")
+        lines.append("3、距离日线蓝色下边缘DW1超过7%的票不会进入A榜。")
 
     if a2_rows:
         for row in a2_rows:
@@ -1007,16 +1285,17 @@ def build_theme_lines(top_themes: list[dict[str, object]]) -> str:
 
 def build_a_lines(rows: list[ScreenedStock]) -> str:
     if not rows:
-        return "今日没有A榜。只有1H抄底/预警不进A榜，必须等2H抄底。"
+        return "今日没有A榜。只有1H真实DXDX或proxy预警不进A榜，必须等2H真实DXDX。"
 
     lines = []
     for index, row in enumerate(rows, start=1):
         suffix = "｜小仓观察" if row.setup_class == "A2_REPAIR_LEADER" else ""
         lines.append(
             f"{index}、{row.symbol}｜{row_type_label(row)}｜{row.setup_grade}｜RS {fmt_rs(row.rs_score)}"
-            f"｜距日线EMA23 {fmt_pct(row.distance_ema23_abs_pct)}"
-            f"｜2H抄底：{signal_label(row.two_hour_bottom_signal, row.two_hour_signal_source)}"
-            f"｜1H预警：{signal_label(row.early_signal_1h, row.early_signal_1h_source)}{suffix}。"
+            f"｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}"
+            f"｜2H真实抄底：{yes_no(row.two_hour_bottom_signal)}"
+            f"｜1H真实抄底：{yes_no(row.early_signal_1h)}"
+            f"｜proxy预警：{yes_no(row.proxy_warning)}{suffix}。"
         )
         if row.setup_class == "A2_REPAIR_LEADER":
             lines.append(
@@ -1030,9 +1309,10 @@ def build_watch_lines(rows: list[ScreenedStock], empty_text: str) -> str:
         return empty_text
     return "\n".join(
         f"{row.symbol}：{row.downgrade_reason}｜RS {fmt_rs(row.rs_score)}"
-        f"｜距EMA23 {fmt_pct(row.distance_ema23_abs_pct)}"
-        f"｜2H抄底：{signal_label(row.two_hour_bottom_signal, row.two_hour_signal_source)}"
-        f"｜1H预警：{signal_label(row.early_signal_1h, row.early_signal_1h_source)}。"
+        f"｜距DW1 {fmt_pct(row.distance_blue_lower_abs_pct)}"
+        f"｜2H真实抄底：{yes_no(row.two_hour_bottom_signal)}"
+        f"｜1H真实抄底：{yes_no(row.early_signal_1h)}"
+        f"｜proxy预警：{yes_no(row.proxy_warning)}。"
         for row in rows
     )
 
@@ -1046,8 +1326,8 @@ def build_risk_lines(rows: list[ScreenedStock]) -> str:
                     reason_counter[reason] += 1
 
     lines = [
-        "1、日线定位置，2H抄底定买点，1H抄底只做提前预警。",
-        "2、距离日线EMA23超过7%的股票不进A榜。",
+        "1、日线蓝黄通道定位置，2H真实DXDX定买点，1H真实DXDX只做提前预警。",
+        "2、距离日线蓝色下边缘DW1超过7%的股票不进A榜。",
         "3、A2修复转强股只允许小仓观察，不按主线强股处理。",
     ]
     if reason_counter:
@@ -1062,16 +1342,8 @@ def build_data_warning_lines(
     errors: list[str],
 ) -> str:
     warnings = []
-    if any(
-        row.two_hour_signal_source == "proxy" or row.early_signal_1h_source == "proxy"
-        for row in rows
-    ):
-        warnings.append("未读取到真实抄底信号文件，1H/2H使用RSI回升+收回EMA23作为proxy信号，不等同于真实抄底。")
-    if any(
-        row.two_hour_signal_source == "missing_custom" or row.early_signal_1h_source == "missing_custom"
-        for row in rows
-    ):
-        warnings.append("已读取真实抄底信号文件；缺失信号的股票按未出现抄底处理，不使用proxy顶替。")
+    if any(row.proxy_warning for row in rows):
+        warnings.append("proxy预警只代表RSI回升+收回短线均线，不能作为A榜依据；A榜只认cd.docx的2H DXDX。")
     for row in rows:
         if row.data_warning:
             warnings.append(f"{row.symbol}：{row.data_warning}")
@@ -1103,6 +1375,15 @@ def write_csv(rows: list[ScreenedStock]) -> None:
                 "rs_score",
                 "ema23",
                 "ema89",
+                "up1",
+                "dw1",
+                "up2",
+                "dw2",
+                "blue_channel_above_yellow",
+                "up1_gt_up2",
+                "blue_channel_slope_up",
+                "distance_blue_lower_pct",
+                "distance_blue_lower_abs_pct",
                 "distance_ema23_pct",
                 "distance_ema23_abs_pct",
                 "distance_52w_high_pct",
@@ -1115,6 +1396,9 @@ def write_csv(rows: list[ScreenedStock]) -> None:
                 "two_hour_signal_source",
                 "early_signal_1h",
                 "early_signal_1h_source",
+                "proxy_warning",
+                "sell_signal_1h",
+                "sell_signal_2h",
                 "rsi_1h",
                 "rsi_2h",
                 "overheated",
@@ -1137,6 +1421,15 @@ def write_csv(rows: list[ScreenedStock]) -> None:
                     "rs_score": round(row.rs_score, 1),
                     "ema23": round(row.ema23, 2),
                     "ema89": round(row.ema89, 2),
+                    "up1": round(row.up1, 2),
+                    "dw1": round(row.dw1, 2),
+                    "up2": round(row.up2, 2),
+                    "dw2": round(row.dw2, 2),
+                    "blue_channel_above_yellow": row.blue_channel_above_yellow,
+                    "up1_gt_up2": row.up1_gt_up2,
+                    "blue_channel_slope_up": row.blue_channel_slope_up,
+                    "distance_blue_lower_pct": round(row.distance_blue_lower_pct, 2),
+                    "distance_blue_lower_abs_pct": round(row.distance_blue_lower_abs_pct, 2),
                     "distance_ema23_pct": round(row.distance_ema23_pct, 2),
                     "distance_ema23_abs_pct": round(row.distance_ema23_abs_pct, 2),
                     "distance_52w_high_pct": round(row.distance_52w_high_pct, 2),
@@ -1149,6 +1442,9 @@ def write_csv(rows: list[ScreenedStock]) -> None:
                     "two_hour_signal_source": row.two_hour_signal_source,
                     "early_signal_1h": row.early_signal_1h,
                     "early_signal_1h_source": row.early_signal_1h_source,
+                    "proxy_warning": row.proxy_warning,
+                    "sell_signal_1h": row.sell_signal_1h,
+                    "sell_signal_2h": row.sell_signal_2h,
                     "rsi_1h": round(row.rsi_1h, 1),
                     "rsi_2h": round(row.rsi_2h, 1),
                     "overheated": row.overheated,
@@ -1162,23 +1458,23 @@ def write_markdown(report: str) -> None:
     MD_PATH.write_text(report, encoding="utf-8")
 
 
+def write_text_report(report: str) -> None:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    TXT_PATH.write_text(report, encoding="utf-8")
+
+
 def main() -> int:
     args = parse_args()
     send_email = args.send_email or env_flag("SEND_EMAIL", default=False)
 
     try:
         universe = load_universe(args.universe_file)
-        bottom_signals = load_bottom_signal_store(args.bottom_signal_file)
-        if bottom_signals.has_real_signals and bottom_signals.source_path:
-            print(f"Loaded bottom signals from {bottom_signals.source_path}")
-        else:
-            print("No custom bottom signal file found; using proxy signals")
+        print("Using cd.docx DXDX/DBJGXC formula for real 1H/2H signals")
         rows, top_themes, errors = screen_market(
             universe=universe,
             top_buy=args.top_buy,
             top_watch=args.top_watch,
             min_rs_score=args.min_rs_score,
-            bottom_signals=bottom_signals,
         )
     except Exception as exc:
         rows = []
@@ -1188,18 +1484,23 @@ def main() -> int:
         traceback.print_exc()
 
     report = build_report(rows, top_themes, errors, args.min_rs_score)
+    plain_report = build_plain_text_report(rows, top_themes)
+    email_subject = build_email_subject(rows)
     write_csv(rows)
     write_markdown(report)
+    write_text_report(plain_report)
     print(f"Wrote {CSV_PATH}")
     print(f"Wrote {MD_PATH}")
+    print(f"Wrote {TXT_PATH}")
 
     if send_email:
         a_count = sum(1 for row in rows if row.list_name == "A")
         try:
             send_report_email(
-                markdown_body=report,
-                report_paths=[CSV_PATH, MD_PATH],
+                report_body=plain_report,
+                report_paths=[CSV_PATH, MD_PATH, TXT_PATH],
                 a_candidate_count=a_count,
+                subject_override=email_subject,
             )
         except EmailConfigError as exc:
             print(f"Missing SMTP config: {exc}", file=sys.stderr)

@@ -80,19 +80,20 @@ def build_subject(subject_base: str, a_candidate_count: int) -> str:
 
 
 def send_report_email(
-    markdown_body: str,
+    report_body: str,
     report_paths: Iterable[Path],
     a_candidate_count: int,
+    subject_override: str | None = None,
 ) -> None:
     config = load_email_config()
-    subject = build_subject(config.subject_base, a_candidate_count)
+    subject = subject_override or build_subject(config.subject_base, a_candidate_count)
     print(f"Sending email to: {', '.join(config.email_to)}")
 
     message = EmailMessage()
     message["From"] = config.smtp_user
     message["To"] = ", ".join(config.email_to)
     message["Subject"] = subject
-    message.set_content(markdown_body)
+    message.set_content(report_body)
 
     for path in report_paths:
         if not path.exists():
