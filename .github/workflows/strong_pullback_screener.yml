@@ -1,4 +1,4 @@
-name: Strong Trend Pullback Screener
+name: Strong Trend Pullback Screener V3
 
 on:
   workflow_dispatch:
@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run screener
+      - name: Run V3 screener
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
@@ -35,14 +35,24 @@ jobs:
         run: |
           python main.py --send-email --top-buy 5 --top-watch 5 --min-rs-score 70
 
+      - name: Show output files
+        if: always()
+        run: |
+          echo "Listing output files:"
+          find . -maxdepth 3 -type f | sort
+          echo "----- TXT REPORT -----"
+          cat output/strong_pullback_report.txt || true
+
       - name: Upload report artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strong-pullback-report
+          name: strong-pullback-report-v3
           path: |
             output/**
             **/strong_pullback_candidates.csv
             **/strong_pullback_report.md
+            **/strong_pullback_report.txt
             *.csv
             *.md
+            *.txt
