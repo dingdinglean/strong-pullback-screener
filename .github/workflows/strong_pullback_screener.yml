@@ -23,7 +23,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Restore change-alert state
+        uses: actions/cache/restore@v4
+        with:
+          path: strong_pullback_state.json
+          key: strong-pullback-state-${{ github.run_id }}
+          restore-keys: |
+            strong-pullback-state-
+
       - name: Run V3 screener
+        env:
+          # The main screener still creates all reports, but no longer emails
+          # the repetitive daily observation text.
+          SEND_EMAIL: "false"
+        run: |
+          python main.py --top-buy 5 --top-watch 5 --min-rs-score 70
+
+      - name: Send change-only alert
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
@@ -31,9 +47,15 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           EMAIL_SUBJECT: ${{ secrets.EMAIL_SUBJECT }}
-          SEND_EMAIL: "true"
         run: |
-          python main.py --send-email --top-buy 5 --top-watch 5 --min-rs-score 70
+          python change_notifier.py
+
+      - name: Save change-alert state
+        if: always() && hashFiles('strong_pullback_state.json') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: strong_pullback_state.json
+          key: strong-pullback-state-${{ github.run_id }}
 
       - name: Show TXT report in log
         if: always()
@@ -41,7 +63,7 @@ jobs:
           echo "===== Output files ====="
           find . -maxdepth 3 -type f | sort
           echo ""
-          echo "===== TXT REPORT ====="
+          echo "===== TXT REPORT (log only; not emailed unless state changes) ====="
           cat output/strong_pullback_report.txt || true
 
       - name: Upload report artifacts
