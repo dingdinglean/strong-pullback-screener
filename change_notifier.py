@@ -29,6 +29,10 @@ STATE_VERSION = 1
 MAX_LINES_PER_SECTION = 5
 
 
+class EmptyCandidateData(RuntimeError):
+    """Raised when the screener produced only a CSV header/no usable rows."""
+
+
 @dataclass(frozen=True)
 class Candidate:
     symbol: str
@@ -104,7 +108,7 @@ def load_candidates(path: Path = CSV_PATH) -> dict[str, Candidate]:
     # likely a data/system failure than a genuine zero-candidate day; do not
     # erase state or issue false A-list invalidation alerts in that case.
     if not candidates:
-        raise RuntimeError(f"candidate CSV contains no rows: {path}")
+        raise EmptyCandidateData(f"candidate CSV contains no usable rows: {path}")
     return candidates
 
 
@@ -309,6 +313,11 @@ def main() -> int:
         failed_symbols = failed_symbols_from_report()
         changes = detect_changes(current, previous, failed_symbols)
         snapshot = build_snapshot(current, previous, failed_symbols)
+    except EmptyCandidateData as exc:
+        # Empty output usually means a temporary market-data failure. Preserve
+        # the previous alert state, send nothing, and keep the workflow green.
+        print(f"No usable candidate data; email skipped and previous state preserved: {exc}")
+        return 0
     except Exception as exc:
         print(f"Change notifier aborted: {exc}", file=sys.stderr)
         return 1
