@@ -33,22 +33,36 @@ jobs:
 
       - name: Run V3 screener
         env:
-          # The main screener still creates all reports, but no longer emails
-          # the repetitive daily observation text.
           SEND_EMAIL: "false"
         run: |
           python main.py --top-buy 5 --top-watch 5 --min-rs-score 70
 
       - name: Send change-only alert
         env:
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          # QQ Mail: use implicit SSL on port 465.
+          SMTP_HOST: smtp.qq.com
+          SMTP_PORT: "465"
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           EMAIL_SUBJECT: ${{ secrets.EMAIL_SUBJECT }}
         run: |
-          python change_notifier.py
+          # A temporary SMTP disconnect must not make the whole screener red.
+          # change_notifier.py only saves state after a successful email, so
+          # failed sends remain eligible for the next scheduled retry.
+          if python change_notifier.py; then
+            exit 0
+          fi
+
+          echo "::warning::First SMTP attempt failed; retrying in 10 seconds."
+          sleep 10
+
+          if python change_notifier.py; then
+            exit 0
+          fi
+
+          echo "::warning::SMTP is still unavailable. Alert state was not advanced; the same change will retry on the next run."
+          exit 0
 
       - name: Save change-alert state
         if: always() && hashFiles('strong_pullback_state.json') != ''
