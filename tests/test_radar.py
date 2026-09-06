@@ -12,9 +12,10 @@ import radar
 from email_sender import send_report_email
 
 
-def row(symbol: str, *, rsi: float = 65, r20: float = 8, r60: float = 18, distance: float = 4, theme: str = "半导体"):
+def row(symbol: str, *, rsi: float = 65, rsi5avg: float | None = None, rsi5change: float = 2, days_above_60: int = 7, r20: float = 8, r60: float = 18, distance: float = 4, theme: str = "半导体"):
     return {
-        "symbol": symbol, "close": 110.0, "rsi14": rsi, "return_5d": 3.0,
+        "symbol": symbol, "close": 110.0, "rsi14": rsi, "rsi14_5d_avg": rsi if rsi5avg is None else rsi5avg,
+        "rsi14_change_5d": rsi5change, "rsi_above_60_days_10d": days_above_60, "return_5d": 3.0,
         "return_20d": r20, "return_60d": r60, "ema20": 105.0, "ema50": 100.0,
         "ema200": 90.0, "distance_ema20_pct": distance, "avg_volume_20d": 2_000_000,
         "sector": "Information Technology", "industry": theme,
@@ -26,10 +27,30 @@ class RadarTests(unittest.TestCase):
         close = pd.Series(range(1, 40), dtype=float)
         self.assertEqual(radar.rsi14(close).iloc[-1], 100)
 
-    def test_top10_is_sorted_by_rsi_and_requires_trend(self):
+    def test_top10_uses_persistent_strength_and_requires_trend(self):
         rows = [row("A", rsi=70), row("B", rsi=80), row("C", rsi=90)]
         rows[2]["ema50"] = 120  # close is not above EMA20 above EMA50
         self.assertEqual([item["symbol"] for item in radar.rank_market_leaders(rows)], ["B", "A"])
+
+    def test_one_day_rsi_spike_does_not_outrank_persistent_strength(self):
+        spike = row("SPIKE", rsi=85, rsi5avg=58, rsi5change=25, days_above_60=1)
+        persistent = row("STEADY", rsi=70, rsi5avg=70, rsi5change=2, days_above_60=10)
+        self.assertEqual([item["symbol"] for item in radar.rank_market_leaders([spike, persistent])], ["STEADY", "SPIKE"])
+
+    def test_ten_day_rsi_persistence_has_an_advantage(self):
+        persistent = row("TEN", rsi=68, rsi5avg=68, rsi5change=1, days_above_60=10)
+        brief = row("ONE", rsi=68, rsi5avg=68, rsi5change=1, days_above_60=1)
+        self.assertGreater(radar.persistent_strength_score(persistent), radar.persistent_strength_score(brief))
+
+    def test_rsi_above_80_does_not_gain_unlimited_score(self):
+        capped = row("CAP80", rsi=80, rsi5avg=80, rsi5change=10, days_above_60=10)
+        extreme = row("CAP95", rsi=95, rsi5avg=95, rsi5change=30, days_above_60=10)
+        self.assertEqual(radar.persistent_strength_score(capped), radar.persistent_strength_score(extreme))
+
+    def test_falling_five_day_rsi_lowers_ranking(self):
+        rising = row("RISING", rsi=72, rsi5avg=70, rsi5change=5, days_above_60=10)
+        falling = row("FALLING", rsi=72, rsi5avg=70, rsi5change=-5, days_above_60=10)
+        self.assertEqual([item["symbol"] for item in radar.rank_market_leaders([falling, rising])], ["RISING", "FALLING"])
 
     def test_industry_mapping_prefers_existing_theme(self):
         sector, theme = radar.theme_for("NVDA", {"sector": "Information Technology", "industry": "Semiconductors"})
@@ -79,13 +100,14 @@ class RadarTests(unittest.TestCase):
         leaders[0]["rsi14_5d_avg"] = 73
         leaders[1]["rsi14_5d_avg"] = 70
         sectors = [
-            {"sector_theme": "Oil & Gas Refining & Marketing", "top10_count": 3, "avg_rsi": 76, "avg_return_20d": 20, "strength_score": 4000, "market_leader": True},
-            {"sector_theme": "Cloud Software", "top10_count": 1, "avg_rsi": 70, "avg_return_20d": 10, "strength_score": 1700, "market_leader": False},
+            {"sector_theme": "Oil & Gas Refining & Marketing", "top10_count": 3, "avg_rsi": 76, "avg_persistent_strength": 76, "avg_return_20d": 20, "strength_score": 4000, "market_leader": True},
+            {"sector_theme": "Cloud Software", "top10_count": 1, "avg_rsi": 70, "avg_persistent_strength": 70, "avg_return_20d": 10, "strength_score": 1700, "market_leader": False},
         ]
         body = radar.report_body(leaders, sectors, [{**leaders[1], "sector_theme": "Cloud Software", "status": "优先关注", "distance_ema20_pct": 3}], "正常", "2026-09-06")
         self.assertIn("🔥 当前主线", body)
         self.assertIn("石油炼化｜强度", body)
-        self.assertIn("MPC｜RSI 78｜5日均 73｜石油炼化", body)
+        self.assertIn("MPC｜强度", body)
+        self.assertIn("RSI 78｜5日均 73｜石油炼化", body)
         self.assertIn("🎯 值得关注", body)
         self.assertNotIn("Oil & Gas Refining & Marketing", body)
 

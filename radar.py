@@ -109,7 +109,7 @@ def display_strength(sector: dict[str, Any]) -> int:
     """Human-sized 0-99 display score; ranking continues to use strength_score."""
     value = (
         20
-        + finite(sector.get("avg_rsi")) * 0.65
+        + finite(sector.get("avg_persistent_strength"), finite(sector.get("avg_rsi"))) * 0.65
         + min(20, finite(sector.get("top10_count")) * 6)
         + max(0, finite(sector.get("avg_return_20d"))) * 0.2
     )
@@ -272,11 +272,14 @@ def compute_metrics(symbol: str, frame, metadata: dict[str, str]) -> dict[str, A
         return None
     sector, industry = theme_for(symbol, metadata)
     rsi_series = rsi14(close)
+    current_rsi = finite(rsi_series.iloc[-1])
     return {
         "symbol": symbol,
         "close": last,
-        "rsi14": finite(rsi_series.iloc[-1]),
+        "rsi14": current_rsi,
         "rsi14_5d_avg": finite(rsi_series.tail(5).mean()),
+        "rsi14_change_5d": current_rsi - finite(rsi_series.iloc[-6]),
+        "rsi_above_60_days_10d": int((rsi_series.tail(10) > 60).sum()),
         "return_5d": pct_change(close, 5),
         "return_20d": pct_change(close, 20),
         "return_60d": pct_change(close, 60),
@@ -294,8 +297,38 @@ def qualifies_for_top10(row: dict[str, Any]) -> bool:
     return row["close"] > row["ema20"] > row["ema50"] and row["rsi14"] > 50
 
 
+def clamp(value: float, lower: float, upper: float) -> float:
+    return max(lower, min(upper, value))
+
+
+def persistent_strength_score(row: dict[str, Any]) -> float:
+    """Rank one-to-two week RSI persistence on a capped 0-100 scale.
+
+    The 80 RSI ceiling prevents a one-day overbought surge from collecting
+    unlimited points.  Five-day mean and ten-day persistence carry 70% of the
+    score, so repeated strength wins over a single high-RSI print.
+    """
+    average_rsi = clamp(finite(row.get("rsi14_5d_avg"), row["rsi14"]), 50, 80)
+    current_rsi = clamp(finite(row.get("rsi14")), 50, 80)
+    days_above_60 = clamp(finite(row.get("rsi_above_60_days_10d")), 0, 10)
+    change_5d = clamp(finite(row.get("rsi14_change_5d")), -10, 10)
+
+    average_component = (average_rsi - 50) / 30 * 100
+    persistence_component = days_above_60 / 10 * 100
+    trend_component = (change_5d + 10) / 20 * 100
+    current_component = (current_rsi - 50) / 30 * 100
+    return round(
+        0.40 * average_component
+        + 0.30 * persistence_component
+        + 0.20 * trend_component
+        + 0.10 * current_component,
+        2,
+    )
+
+
 def rank_market_leaders(rows: Iterable[dict[str, Any]], limit: int = TOP10_LIMIT) -> list[dict[str, Any]]:
-    return sorted((row for row in rows if qualifies_for_top10(row)), key=lambda row: (-row["rsi14"], -row["return_20d"], row["symbol"]))[:limit]
+    eligible = [{**row, "persistent_strength_score": persistent_strength_score(row)} for row in rows if qualifies_for_top10(row)]
+    return sorted(eligible, key=lambda row: (-row["persistent_strength_score"], -row["rsi14"], -row["return_20d"], row["symbol"]))[:limit]
 
 
 def rank_sectors(top10: Iterable[dict[str, Any]], limit: int = TOP_SECTOR_LIMIT) -> list[dict[str, Any]]:
@@ -306,10 +339,11 @@ def rank_sectors(top10: Iterable[dict[str, Any]], limit: int = TOP_SECTOR_LIMIT)
     for theme, items in grouped.items():
         count = len(items)
         avg_rsi = sum(row["rsi14"] for row in items) / count
+        avg_persistent_strength = sum(finite(row.get("persistent_strength_score"), persistent_strength_score(row)) for row in items) / count
         avg_return_20d = sum(row["return_20d"] for row in items) / count
-        # Count dominates; RSI and momentum only resolve ties and quality.
-        score = count * 1000 + avg_rsi * 10 + avg_return_20d
-        ranked.append({"sector_theme": theme, "top10_count": count, "avg_rsi": avg_rsi, "avg_return_20d": avg_return_20d, "strength_score": score, "market_leader": count >= 3})
+        # Count dominates; persistent strength then momentum resolve quality.
+        score = count * 1000 + avg_persistent_strength * 10 + avg_return_20d
+        ranked.append({"sector_theme": theme, "top10_count": count, "avg_rsi": avg_rsi, "avg_persistent_strength": avg_persistent_strength, "avg_return_20d": avg_return_20d, "strength_score": score, "market_leader": count >= 3})
     return sorted(ranked, key=lambda row: (-row["strength_score"], row["sector_theme"]))[:limit]
 
 
@@ -370,7 +404,8 @@ def report_body(top10: list[dict[str, Any]], sectors: list[dict[str, Any]], watc
     else:
         for row in top10[:5]:
             rsi_average = finite(row.get("rsi14_5d_avg"), row["rsi14"])
-            lines.append(f"{row['symbol']}｜RSI {row['rsi14']:.0f}｜5日均 {rsi_average:.0f}｜{display_industry(row['industry'])}")
+            strength = finite(row.get("persistent_strength_score"), persistent_strength_score(row))
+            lines.append(f"{row['symbol']}｜强度 {strength:.0f}｜RSI {row['rsi14']:.0f}｜5日均 {rsi_average:.0f}｜{display_industry(row['industry'])}")
 
     priority = [row for row in watchlist if row["status"] == "优先关注"]
     lines.extend(["", "🎯 值得关注"])
@@ -408,8 +443,8 @@ def report_body(top10: list[dict[str, Any]], sectors: list[dict[str, Any]], watc
 
 
 def write_reports(top10: list[dict[str, Any]], sectors: list[dict[str, Any]], watchlist: list[dict[str, Any]], data_status: str, as_of: str) -> str:
-    write_csv(LEADERS_CSV, ["rank", "symbol", "close", "rsi14", "return_5d", "return_20d", "return_60d", "ema20", "ema50", "ema200", "distance_ema20_pct", "avg_volume_20d", "sector", "industry_theme"], [{"rank": index, **row, "industry_theme": row["industry"]} for index, row in enumerate(top10, 1)])
-    write_csv(SECTORS_CSV, ["rank", "sector_theme", "top10_count", "avg_rsi", "avg_return_20d", "strength_score", "market_leader"], [{"rank": index, **row} for index, row in enumerate(sectors, 1)])
+    write_csv(LEADERS_CSV, ["rank", "symbol", "close", "rsi14", "rsi14_5d_avg", "rsi14_change_5d", "rsi_above_60_days_10d", "persistent_strength_score", "return_5d", "return_20d", "return_60d", "ema20", "ema50", "ema200", "distance_ema20_pct", "avg_volume_20d", "sector", "industry_theme"], [{"rank": index, **row, "industry_theme": row["industry"]} for index, row in enumerate(top10, 1)])
+    write_csv(SECTORS_CSV, ["rank", "sector_theme", "top10_count", "avg_rsi", "avg_persistent_strength", "avg_return_20d", "strength_score", "market_leader"], [{"rank": index, **row} for index, row in enumerate(sectors, 1)])
     write_csv(WATCHLIST_CSV, ["sector_theme", "symbol", "rsi14", "distance_ema20_pct", "return_20d", "candidate_score", "status"], watchlist)
     body = report_body(top10, sectors, watchlist, data_status, as_of)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
