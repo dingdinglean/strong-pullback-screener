@@ -89,7 +89,9 @@ def send_report_email(
 ) -> None:
     config = load_email_config()
     subject = subject_override or build_subject(config.subject_base, a_candidate_count)
-    print(f"Sending email to: {', '.join(config.email_to)}")
+    # Recipients are private configuration.  Keep Actions logs useful without
+    # echoing an address that might not be masked by GitHub.
+    print("Sending email to configured recipient(s)")
 
     message = EmailMessage()
     message["From"] = config.smtp_user

@@ -9,8 +9,10 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from io import StringIO
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.request import Request, urlopen
 
 from email_sender import EmailConfigError, send_report_email
 
@@ -121,7 +123,12 @@ def fetch_universe_metadata() -> dict[str, dict[str, str]]:
     metadata: dict[str, dict[str, str]] = {}
     for url in WIKI_SOURCES:
         try:
-            tables = pd.read_html(url)
+            # Wikipedia rejects the default Python user agent from hosted
+            # runners.  Fetch the public table once with an identifying
+            # browser-like header rather than falling back to a tiny universe.
+            request = Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; MarketStrengthRadar/4.0)"})
+            with urlopen(request, timeout=20) as response:
+                tables = pd.read_html(StringIO(response.read().decode("utf-8", errors="replace")))
         except Exception as exc:
             print(f"::warning::Universe metadata source unavailable: {url} ({exc})", file=sys.stderr)
             continue
