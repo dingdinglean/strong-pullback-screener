@@ -87,12 +87,34 @@ class RadarTests(unittest.TestCase):
             send_report_email("daily", [], 0, subject_override="test", retries=1)
         self.assertEqual(len(attempts), 3)
 
+    def test_gmail_submission_port_587_uses_starttls(self):
+        calls = []
+
+        class FakeSMTP:
+            def __init__(self, host, port, timeout):
+                calls.append(("connect", host, port, timeout))
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def ehlo(self): calls.append(("ehlo",))
+            def starttls(self): calls.append(("starttls",))
+            def login(self, user, password): calls.append(("login", user, password))
+            def send_message(self, message): calls.append(("send",))
+
+        env = {"SMTP_HOST": "smtp.gmail.com", "SMTP_PORT": "587", "SMTP_USER": "sender@example.test", "SMTP_PASSWORD": "app-password", "EMAIL_TO": "recipient@example.test"}
+        with patch.dict(os.environ, env, clear=False), patch("email_sender.smtplib.SMTP", FakeSMTP):
+            send_report_email("daily", [], 0, subject_override="test", retries=1)
+        self.assertEqual(calls[0], ("connect", "smtp.gmail.com", 587, 30))
+        self.assertIn(("starttls",), calls)
+        self.assertIn(("send",), calls)
+
     def test_workflow_runs_v4_daily_email_and_archives_outputs(self):
         workflow = Path(".github/workflows/strong_pullback_screener.yml").read_text(encoding="utf-8")
         self.assertIn("python radar.py --send-email", workflow)
         self.assertIn("0 22 * * 1-5", workflow)
         self.assertIn("market_leaders.csv", workflow)
         self.assertIn("market_radar_report.txt", workflow)
+        self.assertIn("SMTP_HOST: ${{ secrets.SMTP_HOST }}", workflow)
+        self.assertIn("SMTP_PORT: ${{ secrets.SMTP_PORT }}", workflow)
 
 
 if __name__ == "__main__":

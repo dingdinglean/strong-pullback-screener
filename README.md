@@ -32,7 +32,15 @@ Actions 会把上述文件作为 artifact 保存。SMTP 临时失败会在 Pytho
 - 手动运行：GitHub → Actions → **US Market Strength Radar V4** → Run workflow
 - 定时：UTC 周一至周五 22:00（美股收盘后）
 
-需要的 GitHub Secrets：`SMTP_USER`、`SMTP_PASSWORD`、`EMAIL_TO`。SMTP 主机默认 QQ Mail 的 `smtp.qq.com:465`；可通过 `SMTP_HOST`、`SMTP_PORT` 覆盖。
+邮件投递完全由 GitHub Actions Secrets 提供，仓库不会保存邮箱地址或应用密码。使用 Gmail 时设置：
+
+- `SMTP_HOST`：`smtp.gmail.com`
+- `SMTP_PORT`：`587`（STARTTLS）
+- `SMTP_USER`：Gmail 发件地址
+- `SMTP_PASSWORD`：Gmail 应用密码
+- `EMAIL_TO`：日报收件地址
+
+代码会先使用 Secret 指定的安全传输方式；临时 SMTP 失败会重试一次，且仍失败时保留报告 artifact 并让工作流明确失败。
 
 ## 本地测试
 
