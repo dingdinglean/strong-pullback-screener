@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,13 +13,14 @@ import radar
 from email_sender import send_report_email
 
 
-def row(symbol: str, *, rsi: float = 65, rsi5avg: float | None = None, rsi5change: float = 2, days_above_60: int = 7, r20: float = 8, r60: float = 18, distance: float = 4, theme: str = "半导体"):
+def row(symbol: str, *, rsi: float = 65, rsi5avg: float | None = None, rsi5change: float = 2, days_above_60: int = 7, r20: float = 8, r60: float = 18, distance: float = 4, theme: str = "半导体", us_listed: bool = True, security_type: str = "equity"):
     return {
         "symbol": symbol, "close": 110.0, "rsi14": rsi, "rsi14_5d_avg": rsi if rsi5avg is None else rsi5avg,
         "rsi14_change_5d": rsi5change, "rsi_above_60_days_10d": days_above_60, "return_5d": 3.0,
         "return_20d": r20, "return_60d": r60, "ema20": 105.0, "ema50": 100.0,
         "ema200": 90.0, "distance_ema20_pct": distance, "avg_volume_20d": 2_000_000,
         "sector": "Information Technology", "industry": theme,
+        "us_listed": us_listed, "security_type": security_type,
     }
 
 
@@ -34,8 +36,8 @@ class RadarTests(unittest.TestCase):
 
     def test_one_day_rsi_spike_does_not_outrank_persistent_strength(self):
         spike = row("SPIKE", rsi=85, rsi5avg=58, rsi5change=25, days_above_60=1)
-        persistent = row("STEADY", rsi=70, rsi5avg=70, rsi5change=2, days_above_60=10)
-        self.assertEqual([item["symbol"] for item in radar.rank_market_leaders([spike, persistent])], ["STEADY", "SPIKE"])
+        persistent = row("STDY", rsi=70, rsi5avg=70, rsi5change=2, days_above_60=10)
+        self.assertEqual([item["symbol"] for item in radar.rank_market_leaders([spike, persistent])], ["STDY", "SPIKE"])
 
     def test_ten_day_rsi_persistence_has_an_advantage(self):
         persistent = row("TEN", rsi=68, rsi5avg=68, rsi5change=1, days_above_60=10)
@@ -48,9 +50,9 @@ class RadarTests(unittest.TestCase):
         self.assertEqual(radar.persistent_strength_score(capped), radar.persistent_strength_score(extreme))
 
     def test_falling_five_day_rsi_lowers_ranking(self):
-        rising = row("RISING", rsi=72, rsi5avg=70, rsi5change=5, days_above_60=10)
-        falling = row("FALLING", rsi=72, rsi5avg=70, rsi5change=-5, days_above_60=10)
-        self.assertEqual([item["symbol"] for item in radar.rank_market_leaders([falling, rising])], ["RISING", "FALLING"])
+        rising = row("RISE", rsi=72, rsi5avg=70, rsi5change=5, days_above_60=10)
+        falling = row("FALL", rsi=72, rsi5avg=70, rsi5change=-5, days_above_60=10)
+        self.assertEqual([item["symbol"] for item in radar.rank_market_leaders([falling, rising])], ["RISE", "FALL"])
 
     def test_industry_mapping_prefers_existing_theme(self):
         sector, theme = radar.theme_for("NVDA", {"sector": "Information Technology", "industry": "Semiconductors"})
@@ -72,7 +74,7 @@ class RadarTests(unittest.TestCase):
         self.assertEqual(sectors[0]["sector_theme"], "半导体")
 
     def test_second_pass_selects_only_strong_sector_and_caps_at_three(self):
-        rows = [row(f"S{i}", theme="半导体", rsi=60 + i) for i in range(4)] + [row("X", theme="网络安全")]
+        rows = [row(symbol, theme="半导体", rsi=60 + index) for index, symbol in enumerate(("SAA", "SAB", "SAC", "SAD"))] + [row("X", theme="网络安全")]
         sectors = [{"sector_theme": "半导体"}]
         watchlist = radar.build_watchlist(rows, sectors)
         self.assertEqual(len(watchlist), 3)
@@ -88,6 +90,37 @@ class RadarTests(unittest.TestCase):
         frame = pd.DataFrame({"Close": [1.0] * 204, "Volume": [1_000_000] * 204})
         self.assertIsNone(radar.compute_metrics("BAD", frame, {}))
         self.assertEqual(radar.rank_market_leaders([]), [])
+
+    def test_top10_only_contains_us_listed_equity_or_adr(self):
+        nyse = row("MPC", rsi=70)
+        adr = row("TSM", rsi=69, security_type="adr")
+        hong_kong = row("0700.HK", rsi=95, us_listed=False)
+        etf = row("SPY", rsi=95, security_type="etf")
+        leaders = radar.rank_market_leaders([hong_kong, etf, adr, nyse])
+        self.assertEqual([item["symbol"] for item in leaders], ["MPC", "TSM"])
+        self.assertTrue(all(radar.is_us_listed_equity(item["symbol"], item) for item in leaders))
+
+    def test_watchlist_only_contains_us_listed_equity_or_adr(self):
+        us_stock = row("NVDA", theme="半导体")
+        adr = row("ASML", theme="半导体", security_type="adr")
+        fund = row("QQQ", theme="半导体", security_type="etf")
+        overseas = row("600519.SS", theme="半导体", us_listed=False)
+        watchlist = radar.build_watchlist([us_stock, adr, fund, overseas], [{"sector_theme": "半导体"}])
+        self.assertEqual({item["symbol"] for item in watchlist}, {"NVDA", "ASML"})
+        self.assertTrue(all(radar.is_us_listed_equity(item["symbol"], item) for item in watchlist))
+
+    def test_invalid_metadata_cache_cannot_expand_to_non_us_markets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory) / "market_metadata.json"
+            cache.write_text(json.dumps({"symbols": {
+                "0700.HK": {"us_listed": True, "security_type": "equity", "cached_at": "2026-09-06T00:00:00+00:00"},
+                "OTCM": {"us_listed": False, "security_type": "equity", "cached_at": "2026-09-06T00:00:00+00:00"},
+            }}), encoding="utf-8")
+            with patch.object(radar, "fetch_universe_metadata", return_value={}):
+                universe = radar.build_universe(cache)
+            self.assertNotIn("0700.HK", universe)
+            self.assertNotIn("OTCM", universe)
+            self.assertTrue(all(radar.is_us_listed_equity(symbol, metadata) for symbol, metadata in universe.items()))
 
     def test_no_candidates_still_generates_a_normal_daily_report(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(radar, "OUTPUT_DIR", Path(directory)), patch.object(radar, "LEADERS_CSV", Path(directory) / "market_leaders.csv"), patch.object(radar, "SECTORS_CSV", Path(directory) / "sector_strength.csv"), patch.object(radar, "WATCHLIST_CSV", Path(directory) / "watchlist.csv"), patch.object(radar, "MARKDOWN_PATH", Path(directory) / "report.md"), patch.object(radar, "TEXT_PATH", Path(directory) / "report.txt"):

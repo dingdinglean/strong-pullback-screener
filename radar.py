@@ -11,6 +11,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from io import StringIO
 from pathlib import Path
+import re
 from typing import Any, Iterable
 from urllib.request import Request, urlopen
 
@@ -81,6 +82,11 @@ INDUSTRY_TRANSLATIONS = {
 }
 
 FALLBACK_UNIVERSE = tuple(sorted(THEME_MAP))
+# This curated fallback contains only US-listed common stocks or ADRs.  It is
+# deliberately not a general ticker allow-list: fresh symbols must originate
+# in the two US index constituent tables and carry us_listed=True metadata.
+US_LISTED_EQUITY_FALLBACK = frozenset(FALLBACK_UNIVERSE)
+US_TICKER_PATTERN = re.compile(r"^[A-Z]{1,5}(?:-[A-Z])?$")
 WIKI_SOURCES = (
     "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
     "https://en.wikipedia.org/wiki/Nasdaq-100",
@@ -114,6 +120,23 @@ def display_strength(sector: dict[str, Any]) -> int:
         + max(0, finite(sector.get("avg_return_20d"))) * 0.2
     )
     return int(round(max(0, min(99, value))))
+
+
+def is_us_listed_equity(symbol: str, metadata: dict[str, Any] | None) -> bool:
+    """Accept only NYSE/NASDAQ common stocks and US-listed ADRs.
+
+    Index constituent metadata marks trusted US listings.  The narrow curated
+    fallback is used only when an upstream metadata table/cache is unavailable;
+    it contains no ETF, fund, index, crypto, OTC, mainland, or Hong Kong code.
+    """
+    normalized = (symbol or "").strip().upper()
+    if not US_TICKER_PATTERN.fullmatch(normalized):
+        return False
+    metadata = metadata or {}
+    security_type = str(metadata.get("security_type", "")).lower()
+    if security_type and security_type not in {"equity", "adr"}:
+        return False
+    return metadata.get("us_listed") is True or normalized in US_LISTED_EQUITY_FALLBACK
 
 
 def rsi14(close):
@@ -153,7 +176,11 @@ def load_metadata_cache(path: Path = METADATA_CACHE) -> dict[str, dict[str, str]
     except (OSError, json.JSONDecodeError):
         return {}
     entries = raw.get("symbols", {}) if isinstance(raw, dict) else {}
-    return {symbol: value for symbol, value in entries.items() if isinstance(value, dict) and _cache_is_fresh(value)}
+    return {
+        symbol: value
+        for symbol, value in entries.items()
+        if isinstance(value, dict) and _cache_is_fresh(value) and is_us_listed_equity(symbol, value)
+    }
 
 
 def save_metadata_cache(metadata: dict[str, dict[str, str]], path: Path = METADATA_CACHE) -> None:
@@ -198,7 +225,9 @@ def fetch_universe_metadata() -> dict[str, dict[str, str]]:
                     continue
                 sector = str(row.get(sector_column, "") if sector_column else "").strip()
                 industry = str(row.get(industry_column, "") if industry_column else "").strip()
-                metadata[symbol] = {"sector": sector or "其他", "industry": industry or sector or "其他"}
+                # Both source tables contain US-listed index constituents. A
+                # source/cache failure must never expand the eligible market.
+                metadata[symbol] = {"sector": sector or "其他", "industry": industry or sector or "其他", "us_listed": True, "security_type": "equity"}
             break
     return metadata
 
@@ -212,9 +241,10 @@ def build_universe(cache_path: Path = METADATA_CACHE) -> dict[str, dict[str, str
         merged[symbol] = {**value, "cached_at": now}
     for symbol, theme in THEME_MAP.items():
         old = merged.get(symbol, {})
-        merged[symbol] = {"sector": old.get("sector", "其他"), "industry": theme, "cached_at": now}
+        merged[symbol] = {"sector": old.get("sector", "其他"), "industry": theme, "us_listed": True, "security_type": "adr" if symbol in {"TSM", "ASML", "NVO"} else "equity", "cached_at": now}
     if not merged:
-        merged = {symbol: {"sector": "其他", "industry": theme, "cached_at": now} for symbol, theme in THEME_MAP.items()}
+        merged = {symbol: {"sector": "其他", "industry": theme, "us_listed": True, "security_type": "adr" if symbol in {"TSM", "ASML", "NVO"} else "equity", "cached_at": now} for symbol, theme in THEME_MAP.items()}
+    merged = {symbol: metadata for symbol, metadata in merged.items() if is_us_listed_equity(symbol, metadata)}
     save_metadata_cache(merged, cache_path)
     return merged
 
@@ -257,6 +287,8 @@ def download_histories(symbols: list[str]):
 
 
 def compute_metrics(symbol: str, frame, metadata: dict[str, str]) -> dict[str, Any] | None:
+    if not is_us_listed_equity(symbol, metadata):
+        return None
     close = frame["Close"].astype(float).dropna()
     volume = frame["Volume"].astype(float).reindex(close.index).fillna(0)
     if len(close) < 205 or finite(close.iloc[-1]) <= 0:
@@ -290,11 +322,13 @@ def compute_metrics(symbol: str, frame, metadata: dict[str, str]) -> dict[str, A
         "avg_volume_20d": avg_volume,
         "sector": sector,
         "industry": industry,
+        "us_listed": True,
+        "security_type": metadata.get("security_type", "equity"),
     }
 
 
 def qualifies_for_top10(row: dict[str, Any]) -> bool:
-    return row["close"] > row["ema20"] > row["ema50"] and row["rsi14"] > 50
+    return is_us_listed_equity(row.get("symbol", ""), row) and row["close"] > row["ema20"] > row["ema50"] and row["rsi14"] > 50
 
 
 def clamp(value: float, lower: float, upper: float) -> float:
@@ -334,6 +368,8 @@ def rank_market_leaders(rows: Iterable[dict[str, Any]], limit: int = TOP10_LIMIT
 def rank_sectors(top10: Iterable[dict[str, Any]], limit: int = TOP_SECTOR_LIMIT) -> list[dict[str, Any]]:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in top10:
+        if not is_us_listed_equity(row.get("symbol", ""), row):
+            continue
         grouped[row["industry"] or row["sector"] or "其他"].append(row)
     ranked = []
     for theme, items in grouped.items():
@@ -368,6 +404,8 @@ def build_watchlist(rows: Iterable[dict[str, Any]], sectors: Iterable[dict[str, 
     strong = {row["sector_theme"] for row in sectors}
     candidates = []
     for row in rows:
+        if not is_us_listed_equity(row.get("symbol", ""), row):
+            continue
         if row["industry"] not in strong or not (row["close"] > row["ema20"] > row["ema50"]):
             continue
         if row["rsi14"] < 55 or row["return_20d"] <= 0:
