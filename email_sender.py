@@ -116,19 +116,35 @@ def send_report_email(
         )
 
     last_error: Exception | None = None
+    def deliver_with_starttls(port: int) -> None:
+        with smtplib.SMTP(config.smtp_host, port, timeout=30) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(config.smtp_user, config.smtp_password)
+            smtp.send_message(message)
+
+    def deliver_once() -> None:
+        if config.smtp_port != 465:
+            deliver_with_starttls(config.smtp_port)
+            return
+
+        try:
+            with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=30) as smtp:
+                smtp.login(config.smtp_user, config.smtp_password)
+                smtp.send_message(message)
+            return
+        except smtplib.SMTPServerDisconnected:
+            # Some hosted runners are reset on implicit TLS/465 while the same
+            # provider accepts the standard submission port.  This keeps the
+            # host and credentials private and unchanged, and only uses the
+            # fallback after a transport-level disconnect (never after auth).
+            print("::warning::SMTP implicit TLS disconnected; trying STARTTLS submission fallback")
+            deliver_with_starttls(587)
+
     for attempt in range(retries + 1):
         try:
-            if config.smtp_port == 465:
-                with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=30) as smtp:
-                    smtp.login(config.smtp_user, config.smtp_password)
-                    smtp.send_message(message)
-            else:
-                with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=30) as smtp:
-                    smtp.ehlo()
-                    smtp.starttls()
-                    smtp.ehlo()
-                    smtp.login(config.smtp_user, config.smtp_password)
-                    smtp.send_message(message)
+            deliver_once()
             print("Email sent successfully")
             return
         except Exception as exc:
