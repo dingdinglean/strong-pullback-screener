@@ -1,96 +1,45 @@
-# Strong Trend Pullback Screener
+# 美股强势板块雷达
 
-This project runs a strong-trend pullback stock screener, writes CSV and Markdown reports, and can email the report through SMTP.
+V4 每个美股交易日收盘后扫描股票池，找出 RSI 强势 Top10、市场主线板块，并在强板块中筛选趋势强但未明显过热的观察标的。它不是自动交易系统，也不构成投资建议。
 
-## Local Run
+## 工作流
+
+`股票池（S&P 500 + NASDAQ 100，去重） → RSI 强势 Top10 → 板块强度 → 强板块二次选股 → 每日日报邮件`
+
+- 日线指标：RSI(14)、5/20/60 日涨幅、EMA20/50/200、距 EMA20、20 日均量。
+- Top10 要求 `Close > EMA20 > EMA50`、RSI > 50、完整且流动性正常的数据。
+- 板块采用项目既有细主题优先，Wikipedia 指数表的行业/sector 为 fallback；元数据缓存 7 天，不会为数百只股票逐个查询昂贵接口。
+- 强板块按 Top10 席位（最高权重）、平均 RSI、平均 20 日涨幅排序，输出最多前三名；3 席以上标记市场主线。
+- 二次选股要求趋势向上、RSI ≥ 55、20 日动量为正。RSI > 80 或距 EMA20 > 10% 标记“过热不追”，不得列为“优先关注”。每个板块最多三只。
+- 单个股票失败只跳过并记录 warning；有效数据明显不足时输出“数据异常”日报，不制造排名。
+
+## 输出与邮件
+
+每次正常工作日运行均生成并发送日报，即使没有优先关注标的：
+
+- `output/market_leaders.csv`
+- `output/sector_strength.csv`
+- `output/watchlist.csv`
+- `output/market_radar_report.md`
+- `output/market_radar_report.txt`
+
+Actions 会把上述文件作为 artifact 保存。SMTP 临时失败会在 Python 内自动重试一次，并在 Actions log 输出 warning；仍失败则工作流明确失败，不会静默吞掉。
+
+## Actions
+
+工作流：`.github/workflows/strong_pullback_screener.yml`
+
+- 手动运行：GitHub → Actions → **US Market Strength Radar V4** → Run workflow
+- 定时：UTC 周一至周五 22:00（美股收盘后）
+
+需要的 GitHub Secrets：`SMTP_USER`、`SMTP_PASSWORD`、`EMAIL_TO`。SMTP 主机默认 QQ Mail 的 `smtp.qq.com:465`；可通过 `SMTP_HOST`、`SMTP_PORT` 覆盖。
+
+## 本地测试
 
 ```bash
 pip install -r requirements.txt
-python main.py --send-email --top-buy 10 --top-watch 20 --min-rs-score 70
+python -m unittest discover -s tests -v
+python radar.py
 ```
 
-Without arguments, defaults are:
-
-- `top_buy = 10`
-- `top_watch = 20`
-- `min_rs_score = 70`
-- `send_email = SEND_EMAIL` environment variable
-
-Reports are written to:
-
-- `output/strong_pullback_candidates.csv`
-- `output/strong_pullback_report.md`
-- `output/strong_pullback_report.txt`
-
-The email body uses the same compact plain text as `strong_pullback_report.txt`.
-It does not send the full Markdown report as the message body.
-Email attachments include only `strong_pullback_report.txt`; CSV and Markdown are kept in GitHub Actions artifacts for review and debugging.
-
-## V3 Signal Rules
-
-V3 uses two indicator sources with different jobs:
-
-- `cd.docx`: real MACD bottom/sell signals.
-  - `bottom_signal = DXDX`
-  - `sell_signal = DBJGXC`
-- `NXCD002`: blue/yellow trend channel.
-  - Blue channel: `UP1 = EMA(HIGH, 23)`, `DW1 = EMA(LOW, 23)`
-  - Yellow channel: `UP2 = EMA(HIGH, 89)`, `DW2 = EMA(LOW, 89)`
-
-The formulas are implemented in code. No external `bottom_signals.csv` is required.
-
-## GitHub Actions
-
-The workflow is in `.github/workflows/strong_pullback_screener.yml`.
-
-Manual run:
-
-`Actions -> Strong Trend Pullback Screener -> Run workflow`
-
-Scheduled run:
-
-- UTC Monday to Friday 22:00
-- Beijing time Tuesday to Saturday 06:00
-- Roughly after the US market close
-
-## GitHub Secrets
-
-Set these at:
-
-`Settings -> Secrets and variables -> Actions -> New repository secret`
-
-- `SMTP_HOST`
-- `SMTP_PORT`
-- `SMTP_USER`
-- `SMTP_PASSWORD`
-- `EMAIL_TO`
-- `EMAIL_SUBJECT`
-
-Example:
-
-```text
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-sender@example.com
-SMTP_PASSWORD=your email app password
-EMAIL_TO=your-recipient@example.com
-EMAIL_SUBJECT=Strong Pullback Screener Report
-```
-
-Use an email app password for `SMTP_PASSWORD`, not the normal login password.
-
-## Screening Logic
-
-The market itself identifies strong themes by looking at the top 50 relative-strength stocks in the universe and grouping them by theme.
-
-The screener focuses on:
-
-- strong themes
-- strong individual stocks
-- daily blue channel above yellow channel
-- price near daily blue lower edge `DW1`
-- 2H real `DXDX` bottom signal
-- 1H real `DXDX` only as early warning
-- proxy warning only as auxiliary observation, never as A-list evidence
-
-It avoids weak-stock bottom fishing, crash rebounds, and overheated chase entries.
+旧 V3 的 DXDX/A-B-C/change-only 代码保留为遗留实现，但 V4 工作流和邮件不依赖它。

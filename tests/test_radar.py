@@ -1,0 +1,97 @@
+from __future__ import annotations
+
+import os
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+import pandas as pd
+
+import radar
+from email_sender import send_report_email
+
+
+def row(symbol: str, *, rsi: float = 65, r20: float = 8, r60: float = 18, distance: float = 4, theme: str = "半导体"):
+    return {
+        "symbol": symbol, "close": 110.0, "rsi14": rsi, "return_5d": 3.0,
+        "return_20d": r20, "return_60d": r60, "ema20": 105.0, "ema50": 100.0,
+        "ema200": 90.0, "distance_ema20_pct": distance, "avg_volume_20d": 2_000_000,
+        "sector": "Information Technology", "industry": theme,
+    }
+
+
+class RadarTests(unittest.TestCase):
+    def test_rsi14_is_correct_for_uninterrupted_gains(self):
+        close = pd.Series(range(1, 40), dtype=float)
+        self.assertEqual(radar.rsi14(close).iloc[-1], 100)
+
+    def test_top10_is_sorted_by_rsi_and_requires_trend(self):
+        rows = [row("A", rsi=70), row("B", rsi=80), row("C", rsi=90)]
+        rows[2]["ema50"] = 120  # close is not above EMA20 above EMA50
+        self.assertEqual([item["symbol"] for item in radar.rank_market_leaders(rows)], ["B", "A"])
+
+    def test_industry_mapping_prefers_existing_theme(self):
+        sector, theme = radar.theme_for("NVDA", {"sector": "Information Technology", "industry": "Semiconductors"})
+        self.assertEqual(sector, "Information Technology")
+        self.assertEqual(theme, "半导体")
+
+    def test_sector_aggregation_counts_top10_members(self):
+        sectors = radar.rank_sectors([row("A", theme="半导体", rsi=75), row("B", theme="半导体", rsi=73), row("C", theme="网络安全", rsi=80)])
+        self.assertEqual(sectors[0]["sector_theme"], "半导体")
+        self.assertEqual(sectors[0]["top10_count"], 2)
+
+    def test_sector_ranking_gives_count_the_highest_weight(self):
+        sectors = radar.rank_sectors([row("A", theme="半导体", rsi=60), row("B", theme="半导体", rsi=60), row("C", theme="网络安全", rsi=99, r20=50)])
+        self.assertEqual(sectors[0]["sector_theme"], "半导体")
+
+    def test_second_pass_selects_only_strong_sector_and_caps_at_three(self):
+        rows = [row(f"S{i}", theme="半导体", rsi=60 + i) for i in range(4)] + [row("X", theme="网络安全")]
+        sectors = [{"sector_theme": "半导体"}]
+        watchlist = radar.build_watchlist(rows, sectors)
+        self.assertEqual(len(watchlist), 3)
+        self.assertTrue(all(item["sector_theme"] == "半导体" for item in watchlist))
+
+    def test_rsi_above_80_is_overheated(self):
+        self.assertEqual(radar.classify_candidate(row("HOT", rsi=81)), "过热不追")
+
+    def test_distance_above_10_is_overheated(self):
+        self.assertEqual(radar.classify_candidate(row("FAR", distance=10.1)), "过热不追")
+
+    def test_missing_or_invalid_data_does_not_pollute_ranking(self):
+        frame = pd.DataFrame({"Close": [1.0] * 204, "Volume": [1_000_000] * 204})
+        self.assertIsNone(radar.compute_metrics("BAD", frame, {}))
+        self.assertEqual(radar.rank_market_leaders([]), [])
+
+    def test_no_candidates_still_generates_a_normal_daily_report(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(radar, "OUTPUT_DIR", Path(directory)), patch.object(radar, "LEADERS_CSV", Path(directory) / "market_leaders.csv"), patch.object(radar, "SECTORS_CSV", Path(directory) / "sector_strength.csv"), patch.object(radar, "WATCHLIST_CSV", Path(directory) / "watchlist.csv"), patch.object(radar, "MARKDOWN_PATH", Path(directory) / "report.md"), patch.object(radar, "TEXT_PATH", Path(directory) / "report.txt"):
+            body = radar.write_reports([row("A")], [{"sector_theme": "半导体", "top10_count": 1, "avg_rsi": 65, "avg_return_20d": 8, "strength_score": 1, "market_leader": False}], [], "正常", "2026-09-06")
+            self.assertIn("暂无满足", body)
+            self.assertTrue((Path(directory) / "report.txt").exists())
+
+    def test_smtp_temporary_failure_retries_once(self):
+        attempts = []
+        class FakeSMTP:
+            def __init__(self, *args, **kwargs):
+                attempts.append(1)
+                if len(attempts) == 1:
+                    raise OSError("temporary")
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def login(self, *args): pass
+            def send_message(self, *args): pass
+        env = {"SMTP_HOST": "smtp.example.test", "SMTP_PORT": "465", "SMTP_USER": "sender@test", "SMTP_PASSWORD": "secret", "EMAIL_TO": "to@test"}
+        with patch.dict(os.environ, env, clear=False), patch("email_sender.smtplib.SMTP_SSL", FakeSMTP), patch("email_sender.time.sleep"):
+            send_report_email("daily", [], 0, subject_override="test", retries=1)
+        self.assertEqual(len(attempts), 2)
+
+    def test_workflow_runs_v4_daily_email_and_archives_outputs(self):
+        workflow = Path(".github/workflows/strong_pullback_screener.yml").read_text(encoding="utf-8")
+        self.assertIn("python radar.py --send-email", workflow)
+        self.assertIn("0 22 * * 1-5", workflow)
+        self.assertIn("market_leaders.csv", workflow)
+        self.assertIn("market_radar_report.txt", workflow)
+
+
+if __name__ == "__main__":
+    unittest.main()

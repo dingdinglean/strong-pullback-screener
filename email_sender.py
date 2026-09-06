@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import smtplib
 import sys
+import time
 from dataclasses import dataclass
 from email.message import EmailMessage
 from pathlib import Path
@@ -84,6 +85,7 @@ def send_report_email(
     report_paths: Iterable[Path],
     a_candidate_count: int,
     subject_override: str | None = None,
+    retries: int = 0,
 ) -> None:
     config = load_email_config()
     subject = subject_override or build_subject(config.subject_base, a_candidate_count)
@@ -111,21 +113,27 @@ def send_report_email(
             filename=path.name,
         )
 
-    try:
-        if config.smtp_port == 465:
-            with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=30) as smtp:
-                smtp.login(config.smtp_user, config.smtp_password)
-                smtp.send_message(message)
+    last_error: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            if config.smtp_port == 465:
+                with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=30) as smtp:
+                    smtp.login(config.smtp_user, config.smtp_password)
+                    smtp.send_message(message)
+            else:
+                with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=30) as smtp:
+                    smtp.ehlo()
+                    smtp.starttls()
+                    smtp.ehlo()
+                    smtp.login(config.smtp_user, config.smtp_password)
+                    smtp.send_message(message)
             print("Email sent successfully")
             return
-
-        with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=30) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login(config.smtp_user, config.smtp_password)
-            smtp.send_message(message)
-        print("Email sent successfully")
-    except Exception as exc:
-        print(f"Email send failed: {exc!r}", file=sys.stderr)
-        raise
+        except Exception as exc:
+            last_error = exc
+            if attempt < retries:
+                print(f"::warning::SMTP attempt {attempt + 1} failed: {exc!r}; retrying once", file=sys.stderr)
+                time.sleep(2)
+            else:
+                print(f"::warning::Email send failed after {attempt + 1} attempts: {exc!r}", file=sys.stderr)
+    raise last_error or RuntimeError("Email send failed")
