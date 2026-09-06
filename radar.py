@@ -47,6 +47,39 @@ THEME_MAP = {
     "AAPL": "大型科技", "META": "大型科技", "GOOGL": "大型科技", "NFLX": "大型科技", "TSLA": "大型科技",
 }
 
+# Email is Chinese-first.  CSV artifacts deliberately retain the original
+# industry value for users who want the full English classification.
+INDUSTRY_TRANSLATIONS = {
+    "Oil & Gas Refining & Marketing": "石油炼化",
+    "Semiconductors": "半导体",
+    "Cloud Software": "云软件",
+    "Biotechnology": "生物科技",
+    "Health Care Equipment": "医疗设备",
+    "Life Sciences Tools & Services": "生命科学工具",
+    "Agricultural & Farm Machinery": "农业机械",
+    "Application Software": "应用软件",
+    "Systems Software": "系统软件",
+    "IT Consulting & Other Services": "IT 服务",
+    "Oil & Gas Exploration & Production": "油气开采",
+    "Oil & Gas Equipment & Services": "油气设备服务",
+    "Integrated Oil & Gas": "综合能源",
+    "Health Care Services": "医疗服务",
+    "Health Care Technology": "医疗科技",
+    "Technology Hardware, Storage & Peripherals": "科技硬件",
+    "Electronic Equipment & Instruments": "电子设备",
+    "Aerospace & Defense": "航空航天",
+    "Internet Services & Infrastructure": "互联网基础设施",
+    "Consumer Electronics": "消费电子",
+    "Financial Services": "金融服务",
+    "Regional Banks": "区域银行",
+    "Diversified Banks": "银行",
+    "Metals & Mining": "金属矿业",
+    "Gold": "黄金矿业",
+    "Information Technology": "信息技术",
+    "Energy": "能源",
+    "Industrials": "工业",
+}
+
 FALLBACK_UNIVERSE = tuple(sorted(THEME_MAP))
 WIKI_SOURCES = (
     "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
@@ -60,6 +93,27 @@ def finite(value: Any, default: float = 0.0) -> float:
     except (TypeError, ValueError):
         return default
     return result if math.isfinite(result) else default
+
+
+def display_industry(industry: str | None) -> str:
+    """Return a compact Chinese-first label without changing stored metadata."""
+    value = (industry or "其他").strip()
+    if any("\u4e00" <= character <= "\u9fff" for character in value):
+        return value
+    if value in INDUSTRY_TRANSLATIONS:
+        return INDUSTRY_TRANSLATIONS[value]
+    return f"其他（{value}）"
+
+
+def display_strength(sector: dict[str, Any]) -> int:
+    """Human-sized 0-99 display score; ranking continues to use strength_score."""
+    value = (
+        20
+        + finite(sector.get("avg_rsi")) * 0.65
+        + min(20, finite(sector.get("top10_count")) * 6)
+        + max(0, finite(sector.get("avg_return_20d"))) * 0.2
+    )
+    return int(round(max(0, min(99, value))))
 
 
 def rsi14(close):
@@ -217,10 +271,12 @@ def compute_metrics(symbol: str, frame, metadata: dict[str, str]) -> dict[str, A
     if min(last, ema20, ema50, ema200) <= 0:
         return None
     sector, industry = theme_for(symbol, metadata)
+    rsi_series = rsi14(close)
     return {
         "symbol": symbol,
         "close": last,
-        "rsi14": finite(rsi14(close).iloc[-1]),
+        "rsi14": finite(rsi_series.iloc[-1]),
+        "rsi14_5d_avg": finite(rsi_series.tail(5).mean()),
         "return_5d": pct_change(close, 5),
         "return_20d": pct_change(close, 20),
         "return_60d": pct_change(close, 60),
@@ -304,29 +360,50 @@ def report_body(top10: list[dict[str, Any]], sectors: list[dict[str, Any]], watc
     if data_status != "正常":
         lines.extend(["", "数据异常：有效日线数据不足，本日报不输出假排名。", f"数据时间：{as_of} 美股收盘"])
         return "\n".join(lines) + "\n"
-    lines.extend(["", "市场主线："])
-    medals = ["🥇", "🥈", "🥉"]
+    lines.extend(["", "🔥 当前主线"])
     for index, sector in enumerate(sectors):
-        fire = " 🔥" if sector["market_leader"] else ""
-        lines.append(f"{medals[index]} {sector['sector_theme']}{fire}｜Top10 {sector['top10_count']} 席｜RSI {sector['avg_rsi']:.1f}｜20D {sector['avg_return_20d']:+.1f}%")
-    lines.extend(["", "RSI Top10："])
-    lines.extend(f"{index}. {row['symbol']} {row['rsi14']:.1f}｜20D {row['return_20d']:+.1f}%｜{row['industry']}" for index, row in enumerate(top10, 1))
-    lines.extend(["", "重点关注："])
-    if not watchlist:
-        lines.append("暂无满足趋势、动量与不过热条件的候选，继续观察。")
+        lines.append(f"{index + 1}. {display_industry(sector['sector_theme'])}｜强度 {display_strength(sector)}")
+
+    lines.extend(["", "🏆 持续强势"])
+    if not top10:
+        lines.append("暂无满足趋势条件的强势股票。")
     else:
-        for theme in [row["sector_theme"] for row in sectors]:
-            rows = [row for row in watchlist if row["sector_theme"] == theme]
-            if not rows:
-                continue
-            lines.append(f"【{theme}】")
-            lines.extend(f"{row['symbol']}｜RSI {row['rsi14']:.0f}｜距EMA20 {row['distance_ema20_pct']:+.1f}%｜{row['status']}" for row in rows)
-    leader = sectors[0]["sector_theme"] if sectors else "暂无明确主线"
+        for row in top10[:5]:
+            rsi_average = finite(row.get("rsi14_5d_avg"), row["rsi14"])
+            lines.append(f"{row['symbol']}｜RSI {row['rsi14']:.0f}｜5日均 {rsi_average:.0f}｜{display_industry(row['industry'])}")
+
+    priority = [row for row in watchlist if row["status"] == "优先关注"]
+    lines.extend(["", "🎯 值得关注"])
+    if not priority:
+        lines.append("暂无处于理想区间的候选，继续观察。")
+    else:
+        for row in priority[:5]:
+            note = "接近20日均线" if row["distance_ema20_pct"] <= 4 else "持续强，尚未明显过热"
+            lines.append(f"{row['symbol']}｜{display_industry(row['sector_theme'])}｜{note}")
+
+    overheated = []
+    seen_symbols = set()
+    for row in [*watchlist, *top10]:
+        if row["symbol"] in seen_symbols or classify_candidate(row) != "过热不追":
+            continue
+        seen_symbols.add(row["symbol"])
+        overheated.append(row)
+    if overheated:
+        lines.extend(["", "⚠️ 过热"])
+        for row in overheated[:3]:
+            reason = "RSI偏高、远离20日均线" if row["rsi14"] > 80 and row["distance_ema20_pct"] > 10 else ("RSI偏高" if row["rsi14"] > 80 else "远离20日均线")
+            lines.append(f"{row['symbol']}｜{reason}｜暂不追")
+
+    leader = display_industry(sectors[0]["sector_theme"]) if sectors else "暂无明确主线"
+    runner_up = display_industry(sectors[1]["sector_theme"]) if len(sectors) > 1 else ""
     priority = next((row for row in watchlist if row["status"] == "优先关注"), None)
-    conclusion = f"{leader}是当前最明确主线。"
+    conclusion = f"目前资金最集中在{leader}"
+    if runner_up:
+        conclusion += f"，{runner_up}次之"
+    conclusion += "。"
     if priority:
-        conclusion += f" 优先等待 {priority['symbol']} 等强势但未明显过热标的。"
-    lines.extend(["", f"今日结论：{conclusion}", f"数据时间：{as_of} 美股收盘", "仅供市场观察，不构成投资建议。"])
+        conclusion += f" 可关注 {priority['symbol']} 等尚未明显过热的标的。"
+    lines.extend(["", f"一句话：{conclusion}", f"数据时间：{as_of} 美股收盘", "完整英文行业与数据请见 CSV Artifact；仅供市场观察，不构成投资建议。"])
     return "\n".join(lines) + "\n"
 
 
@@ -344,7 +421,7 @@ def write_reports(top10: list[dict[str, Any]], sectors: list[dict[str, Any]], wa
 def build_subject(sectors: list[dict[str, Any]], top10: list[dict[str, Any]], data_status: str, as_of: str) -> str:
     if data_status != "正常":
         return f"【美股强势雷达】数据异常｜{as_of}"
-    leader = sectors[0]["sector_theme"] if sectors else "无明确主线"
+    leader = display_industry(sectors[0]["sector_theme"]) if sectors else "无明确主线"
     names = " ".join(row["symbol"] for row in top10[:3]) or "无候选"
     return f"【美股强势雷达】{leader}领涨｜{names}｜{as_of}"
 

@@ -36,6 +36,11 @@ class RadarTests(unittest.TestCase):
         self.assertEqual(sector, "Information Technology")
         self.assertEqual(theme, "半导体")
 
+    def test_email_industry_labels_are_chinese_first_with_safe_fallback(self):
+        self.assertEqual(radar.display_industry("Oil & Gas Refining & Marketing"), "石油炼化")
+        self.assertEqual(radar.display_industry("Semiconductors"), "半导体")
+        self.assertEqual(radar.display_industry("New English Industry"), "其他（New English Industry）")
+
     def test_sector_aggregation_counts_top10_members(self):
         sectors = radar.rank_sectors([row("A", theme="半导体", rsi=75), row("B", theme="半导体", rsi=73), row("C", theme="网络安全", rsi=80)])
         self.assertEqual(sectors[0]["sector_theme"], "半导体")
@@ -66,8 +71,23 @@ class RadarTests(unittest.TestCase):
     def test_no_candidates_still_generates_a_normal_daily_report(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(radar, "OUTPUT_DIR", Path(directory)), patch.object(radar, "LEADERS_CSV", Path(directory) / "market_leaders.csv"), patch.object(radar, "SECTORS_CSV", Path(directory) / "sector_strength.csv"), patch.object(radar, "WATCHLIST_CSV", Path(directory) / "watchlist.csv"), patch.object(radar, "MARKDOWN_PATH", Path(directory) / "report.md"), patch.object(radar, "TEXT_PATH", Path(directory) / "report.txt"):
             body = radar.write_reports([row("A")], [{"sector_theme": "半导体", "top10_count": 1, "avg_rsi": 65, "avg_return_20d": 8, "strength_score": 1, "market_leader": False}], [], "正常", "2026-09-06")
-            self.assertIn("暂无满足", body)
+            self.assertIn("暂无处于理想区间", body)
             self.assertTrue((Path(directory) / "report.txt").exists())
+
+    def test_email_report_is_compact_chinese_first(self):
+        leaders = [row("MPC", theme="Oil & Gas Refining & Marketing", rsi=78), row("CRM", theme="Cloud Software", rsi=77)]
+        leaders[0]["rsi14_5d_avg"] = 73
+        leaders[1]["rsi14_5d_avg"] = 70
+        sectors = [
+            {"sector_theme": "Oil & Gas Refining & Marketing", "top10_count": 3, "avg_rsi": 76, "avg_return_20d": 20, "strength_score": 4000, "market_leader": True},
+            {"sector_theme": "Cloud Software", "top10_count": 1, "avg_rsi": 70, "avg_return_20d": 10, "strength_score": 1700, "market_leader": False},
+        ]
+        body = radar.report_body(leaders, sectors, [{**leaders[1], "sector_theme": "Cloud Software", "status": "优先关注", "distance_ema20_pct": 3}], "正常", "2026-09-06")
+        self.assertIn("🔥 当前主线", body)
+        self.assertIn("石油炼化｜强度", body)
+        self.assertIn("MPC｜RSI 78｜5日均 73｜石油炼化", body)
+        self.assertIn("🎯 值得关注", body)
+        self.assertNotIn("Oil & Gas Refining & Marketing", body)
 
     def test_smtp_temporary_failure_retries_once(self):
         attempts = []
