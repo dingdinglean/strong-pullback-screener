@@ -386,7 +386,16 @@ def main() -> int:
         body = write_reports(top10, sectors, watchlist, data_status, as_of)
         print(body)
         if args.send_email or os.getenv("SEND_EMAIL", "").lower() in {"1", "true", "yes"}:
-            send_report_email(body, [TEXT_PATH], 0, subject_override=build_subject(sectors, top10, data_status, as_of), retries=1)
+            try:
+                send_report_email(body, [TEXT_PATH], 0, subject_override=build_subject(sectors, top10, data_status, as_of), retries=1)
+            except EmailConfigError:
+                raise
+            except Exception as exc:
+                # The market report remains valid and archived when a mail
+                # provider is temporarily unavailable.  The non-zero status
+                # keeps the Actions run visibly actionable.
+                print(f"::warning::Daily report was generated but email delivery failed: {exc!r}", file=sys.stderr)
+                return 1
         return 0
     except EmailConfigError as exc:
         print(f"::warning::SMTP configuration missing: {exc}", file=sys.stderr)

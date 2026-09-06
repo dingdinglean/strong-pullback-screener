@@ -124,23 +124,32 @@ def send_report_email(
             smtp.login(config.smtp_user, config.smtp_password)
             smtp.send_message(message)
 
-    def deliver_once() -> None:
-        if config.smtp_port != 465:
-            deliver_with_starttls(config.smtp_port)
-            return
+    def deliver_ssl() -> None:
+        with smtplib.SMTP_SSL(config.smtp_host, 465, timeout=30) as smtp:
+            smtp.login(config.smtp_user, config.smtp_password)
+            smtp.send_message(message)
 
-        try:
-            with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=30) as smtp:
-                smtp.login(config.smtp_user, config.smtp_password)
-                smtp.send_message(message)
-            return
-        except smtplib.SMTPServerDisconnected:
-            # Some hosted runners are reset on implicit TLS/465 while the same
-            # provider accepts the standard submission port.  This keeps the
-            # host and credentials private and unchanged, and only uses the
-            # fallback after a transport-level disconnect (never after auth).
-            print("::warning::SMTP implicit TLS disconnected; trying STARTTLS submission fallback")
-            deliver_with_starttls(587)
+    def deliver_once() -> None:
+        # Use the secret-configured transport first.  If the SMTP server resets
+        # a connection before authentication, try the provider's other standard
+        # submission transport.  No credentials are ever sent without TLS.
+        transports = [("ssl", 465)] if config.smtp_port == 465 else [("starttls", config.smtp_port)]
+        if ("ssl", 465) not in transports:
+            transports.append(("ssl", 465))
+        if ("starttls", 587) not in transports:
+            transports.append(("starttls", 587))
+        transport_error: Exception | None = None
+        for mode, port in transports:
+            try:
+                if mode == "ssl":
+                    deliver_ssl()
+                else:
+                    deliver_with_starttls(port)
+                return
+            except (OSError, smtplib.SMTPServerDisconnected) as exc:
+                transport_error = exc
+                print("::warning::SMTP transport disconnected; trying secure submission fallback", file=sys.stderr)
+        raise transport_error or RuntimeError("No SMTP transport available")
 
     for attempt in range(retries + 1):
         try:

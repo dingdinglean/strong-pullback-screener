@@ -74,16 +74,18 @@ class RadarTests(unittest.TestCase):
         class FakeSMTP:
             def __init__(self, *args, **kwargs):
                 attempts.append(1)
-                if len(attempts) == 1:
+                # First delivery tries 465 then 587; both fail.  The outer
+                # retry then succeeds without making a real network request.
+                if len(attempts) <= 2:
                     raise OSError("temporary")
             def __enter__(self): return self
             def __exit__(self, *args): return False
             def login(self, *args): pass
             def send_message(self, *args): pass
         env = {"SMTP_HOST": "smtp.example.test", "SMTP_PORT": "465", "SMTP_USER": "sender@test", "SMTP_PASSWORD": "secret", "EMAIL_TO": "to@test"}
-        with patch.dict(os.environ, env, clear=False), patch("email_sender.smtplib.SMTP_SSL", FakeSMTP), patch("email_sender.time.sleep"):
+        with patch.dict(os.environ, env, clear=False), patch("email_sender.smtplib.SMTP_SSL", FakeSMTP), patch("email_sender.smtplib.SMTP", FakeSMTP), patch("email_sender.time.sleep"):
             send_report_email("daily", [], 0, subject_override="test", retries=1)
-        self.assertEqual(len(attempts), 2)
+        self.assertEqual(len(attempts), 3)
 
     def test_workflow_runs_v4_daily_email_and_archives_outputs(self):
         workflow = Path(".github/workflows/strong_pullback_screener.yml").read_text(encoding="utf-8")
