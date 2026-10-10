@@ -1,4 +1,6 @@
-pandas>=2.2.0
-numpy>=1.26.0
-yfinance>=0.2.40
-lxml>=5.2.0
+# Upper bounds are the next major after the versions that installed and passed
+# the unit tests here: pandas==3.0.6, numpy==2.5.3, yfinance==1.7.0, lxml==6.1.3.
+pandas>=2.2.0,<4
+numpy>=1.26.0,<3
+yfinance>=0.2.40,<2
+lxml>=5.2.0,<7

@@ -1,0 +1,3035 @@
+{
+  "description": "Offline baseline of the Wikipedia constituent parse. Refresh after fetched_at is older than 7 days. Do not replace this file with a short or failed parse.",
+  "fetched_at": "2026-10-10T09:12:59+00:00",
+  "sources": [
+    {
+      "accepted_symbols": 503,
+      "url": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    },
+    {
+      "accepted_symbols": 0,
+      "url": "https://en.wikipedia.org/wiki/Nasdaq-100"
+    }
+  ],
+  "symbol_count": 503,
+  "symbols": {
+    "A": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AAPL": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ABBV": {
+      "industry": "Biotechnology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ABNB": {
+      "industry": "Hotels, Resorts & Cruise Lines",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ABT": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ACGL": {
+      "industry": "Property & Casualty Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ACN": {
+      "industry": "IT Consulting & Other Services",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ADBE": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ADI": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ADM": {
+      "industry": "Agricultural Products & Services",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ADP": {
+      "industry": "Human Resource & Employment Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ADSK": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AEE": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AEP": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AES": {
+      "industry": "Independent Power Producers & Energy Traders",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AFL": {
+      "industry": "Life & Health Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AIG": {
+      "industry": "Multi-line Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AIZ": {
+      "industry": "Multi-line Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AJG": {
+      "industry": "Insurance Brokers",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AKAM": {
+      "industry": "Internet Services & Infrastructure",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ALB": {
+      "industry": "Specialty Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ALGN": {
+      "industry": "Health Care Supplies",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ALL": {
+      "industry": "Property & Casualty Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ALLE": {
+      "industry": "Building Products",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AMAT": {
+      "industry": "Semiconductor Materials & Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AMCR": {
+      "industry": "Paper & Plastic Packaging Products & Materials",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AMD": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AME": {
+      "industry": "Electrical Components & Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AMGN": {
+      "industry": "Biotechnology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AMP": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AMT": {
+      "industry": "Telecom Tower REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AMZN": {
+      "industry": "Broadline Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ANET": {
+      "industry": "Communications Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AON": {
+      "industry": "Insurance Brokers",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AOS": {
+      "industry": "Building Products",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "APA": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "APD": {
+      "industry": "Industrial Gases",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "APH": {
+      "industry": "Electronic Components",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "APO": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "APP": {
+      "industry": "Advertising",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "APTV": {
+      "industry": "Automotive Parts & Equipment",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ARE": {
+      "industry": "Office REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ARES": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ATO": {
+      "industry": "Gas Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AVGO": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AVY": {
+      "industry": "Paper & Plastic Packaging Products & Materials",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AWK": {
+      "industry": "Water Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AXON": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AXP": {
+      "industry": "Consumer Finance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "AZO": {
+      "industry": "Automotive Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BA": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BAC": {
+      "industry": "Diversified Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BALL": {
+      "industry": "Metal, Glass & Plastic Containers",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BAX": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BBY": {
+      "industry": "Computer & Electronics Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BDX": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BE": {
+      "industry": "Electrical Components & Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BEN": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BF-B": {
+      "industry": "Distillers & Vintners",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BG": {
+      "industry": "Agricultural Products & Services",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BIIB": {
+      "industry": "Biotechnology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BKNG": {
+      "industry": "Hotels, Resorts & Cruise Lines",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BKR": {
+      "industry": "Oil & Gas Equipment & Services",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BLK": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BMY": {
+      "industry": "Pharmaceuticals",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BNY": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BR": {
+      "industry": "Data Processing & Outsourced Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BRK-B": {
+      "industry": "Multi-Sector Holdings",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BRO": {
+      "industry": "Insurance Brokers",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BSX": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BX": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "BXP": {
+      "industry": "Office REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "C": {
+      "industry": "Diversified Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CAH": {
+      "industry": "Health Care Distributors",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CARR": {
+      "industry": "Building Products",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CASY": {
+      "industry": "Food Retail",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CAT": {
+      "industry": "Construction Machinery & Heavy Transportation Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CB": {
+      "industry": "Property & Casualty Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CBOE": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CBRE": {
+      "industry": "Real Estate Services",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CCI": {
+      "industry": "Telecom Tower REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CCL": {
+      "industry": "Hotels, Resorts & Cruise Lines",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CDNS": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CDW": {
+      "industry": "Technology Distributors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CEG": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CF": {
+      "industry": "Fertilizers & Agricultural Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CFG": {
+      "industry": "Regional Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CHD": {
+      "industry": "Household Products",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CHRW": {
+      "industry": "Air Freight & Logistics",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CHTR": {
+      "industry": "Cable & Satellite",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CI": {
+      "industry": "Health Care Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CIEN": {
+      "industry": "Communications Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CINF": {
+      "industry": "Property & Casualty Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CL": {
+      "industry": "Household Products",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CLX": {
+      "industry": "Household Products",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CMCSA": {
+      "industry": "Cable & Satellite",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CME": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CMG": {
+      "industry": "Restaurants",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CMI": {
+      "industry": "Construction Machinery & Heavy Transportation Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CMS": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CNC": {
+      "industry": "Managed Health Care",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CNP": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "COF": {
+      "industry": "Consumer Finance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "COHR": {
+      "industry": "Electronic Components",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "COIN": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "COO": {
+      "industry": "Health Care Supplies",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "COP": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "COR": {
+      "industry": "Health Care Distributors",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "COST": {
+      "industry": "Consumer Staples Merchandise Retail",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CPAY": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CPRT": {
+      "industry": "Diversified Support Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CPT": {
+      "industry": "Multi-Family Residential REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CRH": {
+      "industry": "Construction Materials",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CRL": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CRM": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CRWD": {
+      "industry": "Systems Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CSCO": {
+      "industry": "Communications Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CSGP": {
+      "industry": "Real Estate Services",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CSX": {
+      "industry": "Rail Transportation",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CTAS": {
+      "industry": "Diversified Support Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CTSH": {
+      "industry": "IT Consulting & Other Services",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CVNA": {
+      "industry": "Automotive Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CVS": {
+      "industry": "Health Care Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "CVX": {
+      "industry": "Integrated Oil & Gas",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "D": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DAL": {
+      "industry": "Passenger Airlines",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DASH": {
+      "industry": "Specialized Consumer Services",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DD": {
+      "industry": "Industrial Conglomerates",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DDOG": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DE": {
+      "industry": "Agricultural & Farm Machinery",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DECK": {
+      "industry": "Footwear",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DELL": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DG": {
+      "industry": "Consumer Staples Merchandise Retail",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DGX": {
+      "industry": "Health Care Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DHI": {
+      "industry": "Homebuilding",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DHR": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DIS": {
+      "industry": "Movies & Entertainment",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DLR": {
+      "industry": "Data Center REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DLTR": {
+      "industry": "Consumer Staples Merchandise Retail",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DOC": {
+      "industry": "Health Care REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DOV": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DOW": {
+      "industry": "Commodity Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DPZ": {
+      "industry": "Restaurants",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DRI": {
+      "industry": "Restaurants",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DTE": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DUK": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DVA": {
+      "industry": "Health Care Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DVN": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "DXCM": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EBAY": {
+      "industry": "Broadline Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ECHO": {
+      "industry": "Wireless Telecommunication Services",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ECL": {
+      "industry": "Specialty Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ED": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EFX": {
+      "industry": "Research & Consulting Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EG": {
+      "industry": "Reinsurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EIX": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EL": {
+      "industry": "Personal Care Products",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ELV": {
+      "industry": "Managed Health Care",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EME": {
+      "industry": "Construction & Engineering",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EMR": {
+      "industry": "Electrical Components & Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EOG": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EQIX": {
+      "industry": "Data Center REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EQT": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ERIE": {
+      "industry": "Insurance Brokers",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ES": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ESS": {
+      "industry": "Multi-Family Residential REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ETN": {
+      "industry": "Electrical Components & Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ETR": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EVRG": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EW": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EXC": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EXE": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EXPD": {
+      "industry": "Air Freight & Logistics",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EXPE": {
+      "industry": "Hotels, Resorts & Cruise Lines",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "EXR": {
+      "industry": "Self-Storage REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "F": {
+      "industry": "Automobile Manufacturers",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FANG": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FAST": {
+      "industry": "Trading Companies & Distributors",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FCX": {
+      "industry": "Copper",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FDS": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FDX": {
+      "industry": "Air Freight & Logistics",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FDXF": {
+      "industry": "Cargo Ground Transportation",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FE": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FERG": {
+      "industry": "Trading Companies & Distributors",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FFIV": {
+      "industry": "Communications Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FICO": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FIS": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FISV": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FITB": {
+      "industry": "Regional Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FIX": {
+      "industry": "Construction & Engineering",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FLEX": {
+      "industry": "Electronic Manufacturing Services",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FOX": {
+      "industry": "Broadcasting",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FOXA": {
+      "industry": "Broadcasting",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FRT": {
+      "industry": "Retail REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FSLR": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FTNT": {
+      "industry": "Systems Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "FTV": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GD": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GDDY": {
+      "industry": "Internet Services & Infrastructure",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GE": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GEHC": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GEN": {
+      "industry": "Systems Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GEV": {
+      "industry": "Heavy Electrical Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GILD": {
+      "industry": "Biotechnology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GIS": {
+      "industry": "Packaged Foods & Meats",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GL": {
+      "industry": "Life & Health Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GLW": {
+      "industry": "Electronic Components",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GM": {
+      "industry": "Automobile Manufacturers",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GNRC": {
+      "industry": "Heavy Electrical Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GOOG": {
+      "industry": "Interactive Media & Services",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GOOGL": {
+      "industry": "Interactive Media & Services",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GPC": {
+      "industry": "Distributors",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GPN": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GRMN": {
+      "industry": "Consumer Electronics",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GS": {
+      "industry": "Investment Banking & Brokerage",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "GWW": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HAL": {
+      "industry": "Oil & Gas Equipment & Services",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HAS": {
+      "industry": "Leisure Products",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HBAN": {
+      "industry": "Regional Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HCA": {
+      "industry": "Health Care Facilities",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HD": {
+      "industry": "Home Improvement Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HIG": {
+      "industry": "Property & Casualty Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HII": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HLT": {
+      "industry": "Hotels, Resorts & Cruise Lines",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HON": {
+      "industry": "Industrial Conglomerates",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HONA": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HOOD": {
+      "industry": "Investment Banking & Brokerage",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HPE": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HPQ": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HRL": {
+      "industry": "Packaged Foods & Meats",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HSIC": {
+      "industry": "Health Care Distributors",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HST": {
+      "industry": "Hotel & Resort REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HSY": {
+      "industry": "Packaged Foods & Meats",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HUBB": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HUM": {
+      "industry": "Managed Health Care",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "HWM": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IBKR": {
+      "industry": "Investment Banking & Brokerage",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IBM": {
+      "industry": "IT Consulting & Other Services",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ICE": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IDXX": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IEX": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IFF": {
+      "industry": "Specialty Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ILMN": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "INCY": {
+      "industry": "Biotechnology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "INTC": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "INTU": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "INVH": {
+      "industry": "Single-Family Residential REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IP": {
+      "industry": "Paper & Plastic Packaging Products & Materials",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IQV": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IR": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IRM": {
+      "industry": "Other Specialized REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ISRG": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IT": {
+      "industry": "IT Consulting & Other Services",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ITW": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "IVZ": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "J": {
+      "industry": "Construction & Engineering",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "JBHT": {
+      "industry": "Cargo Ground Transportation",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "JBL": {
+      "industry": "Electronic Manufacturing Services",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "JCI": {
+      "industry": "Building Products",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "JKHY": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "JNJ": {
+      "industry": "Pharmaceuticals",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "JPM": {
+      "industry": "Diversified Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KDP": {
+      "industry": "Soft Drinks & Non-alcoholic Beverages",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KEY": {
+      "industry": "Regional Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KEYS": {
+      "industry": "Electronic Equipment & Instruments",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KHC": {
+      "industry": "Packaged Foods & Meats",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KIM": {
+      "industry": "Retail REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KKR": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KLAC": {
+      "industry": "Semiconductor Materials & Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KMB": {
+      "industry": "Household Products",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KMI": {
+      "industry": "Oil & Gas Storage & Transportation",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KO": {
+      "industry": "Soft Drinks & Non-alcoholic Beverages",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KR": {
+      "industry": "Food Retail",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "KVUE": {
+      "industry": "Personal Care Products",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "L": {
+      "industry": "Multi-line Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LDOS": {
+      "industry": "Diversified Support Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LEN": {
+      "industry": "Homebuilding",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LH": {
+      "industry": "Health Care Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LHX": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LII": {
+      "industry": "Building Products",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LIN": {
+      "industry": "Industrial Gases",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LITE": {
+      "industry": "Communications Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LLY": {
+      "industry": "Pharmaceuticals",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LMT": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LNT": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LOW": {
+      "industry": "Home Improvement Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LRCX": {
+      "industry": "Semiconductor Materials & Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LULU": {
+      "industry": "Apparel, Accessories & Luxury Goods",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LUV": {
+      "industry": "Passenger Airlines",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LVS": {
+      "industry": "Casinos & Gaming",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LYB": {
+      "industry": "Specialty Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "LYV": {
+      "industry": "Movies & Entertainment",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MA": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MAA": {
+      "industry": "Multi-Family Residential REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MAR": {
+      "industry": "Hotels, Resorts & Cruise Lines",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MAS": {
+      "industry": "Building Products",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MCD": {
+      "industry": "Restaurants",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MCHP": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MCK": {
+      "industry": "Health Care Distributors",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MCO": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MDLZ": {
+      "industry": "Packaged Foods & Meats",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MDT": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MET": {
+      "industry": "Life & Health Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "META": {
+      "industry": "Interactive Media & Services",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MGM": {
+      "industry": "Casinos & Gaming",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MKC": {
+      "industry": "Packaged Foods & Meats",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MLM": {
+      "industry": "Construction Materials",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MMM": {
+      "industry": "Industrial Conglomerates",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MNST": {
+      "industry": "Soft Drinks & Non-alcoholic Beverages",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MO": {
+      "industry": "Tobacco",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MOS": {
+      "industry": "Fertilizers & Agricultural Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MPC": {
+      "industry": "Oil & Gas Refining & Marketing",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MPWR": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MRK": {
+      "industry": "Pharmaceuticals",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MRNA": {
+      "industry": "Biotechnology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MRSH": {
+      "industry": "Insurance Brokers",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MRVL": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MS": {
+      "industry": "Investment Banking & Brokerage",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MSCI": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MSFT": {
+      "industry": "Systems Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MSI": {
+      "industry": "Communications Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MTB": {
+      "industry": "Regional Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MTD": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "MU": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NCLH": {
+      "industry": "Hotels, Resorts & Cruise Lines",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NDAQ": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NDSN": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NEE": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NEM": {
+      "industry": "Gold",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NFLX": {
+      "industry": "Movies & Entertainment",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NI": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NKE": {
+      "industry": "Apparel, Accessories & Luxury Goods",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NOC": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NOW": {
+      "industry": "Systems Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NRG": {
+      "industry": "Independent Power Producers & Energy Traders",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NSC": {
+      "industry": "Rail Transportation",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NTAP": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NTRS": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NUE": {
+      "industry": "Steel",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NVDA": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NVR": {
+      "industry": "Homebuilding",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NWS": {
+      "industry": "Publishing",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NWSA": {
+      "industry": "Publishing",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "NXPI": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "O": {
+      "industry": "Retail REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ODFL": {
+      "industry": "Cargo Ground Transportation",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "OKE": {
+      "industry": "Oil & Gas Storage & Transportation",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "OMC": {
+      "industry": "Advertising",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ON": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ORCL": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ORLY": {
+      "industry": "Automotive Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "OTIS": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "OXY": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "P": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PANW": {
+      "industry": "Systems Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PAYX": {
+      "industry": "Human Resource & Employment Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PCAR": {
+      "industry": "Construction Machinery & Heavy Transportation Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PCG": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PEG": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PEP": {
+      "industry": "Soft Drinks & Non-alcoholic Beverages",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PFE": {
+      "industry": "Pharmaceuticals",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PFG": {
+      "industry": "Life & Health Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PG": {
+      "industry": "Personal Care Products",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PGR": {
+      "industry": "Property & Casualty Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PH": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PHM": {
+      "industry": "Homebuilding",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PKG": {
+      "industry": "Paper & Plastic Packaging Products & Materials",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PLD": {
+      "industry": "Industrial REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PLTR": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PM": {
+      "industry": "Tobacco",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PNC": {
+      "industry": "Diversified Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PNR": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PNW": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PODD": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PPG": {
+      "industry": "Specialty Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PPL": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PRU": {
+      "industry": "Life & Health Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PSA": {
+      "industry": "Self-Storage REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PSX": {
+      "industry": "Oil & Gas Refining & Marketing",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PTC": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PWR": {
+      "industry": "Construction & Engineering",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "PYPL": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "Q": {
+      "industry": "Semiconductor Materials & Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "QCOM": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RCL": {
+      "industry": "Hotels, Resorts & Cruise Lines",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RDDT": {
+      "industry": "Interactive Media & Services",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "REG": {
+      "industry": "Retail REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "REGN": {
+      "industry": "Biotechnology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RF": {
+      "industry": "Regional Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RJF": {
+      "industry": "Investment Banking & Brokerage",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RL": {
+      "industry": "Apparel, Accessories & Luxury Goods",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RMD": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ROK": {
+      "industry": "Electrical Components & Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ROL": {
+      "industry": "Environmental & Facilities Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ROP": {
+      "industry": "Electronic Equipment & Instruments",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ROST": {
+      "industry": "Apparel Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RSG": {
+      "industry": "Environmental & Facilities Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RTX": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "RVTY": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SBAC": {
+      "industry": "Telecom Tower REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SBUX": {
+      "industry": "Restaurants",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SCHW": {
+      "industry": "Investment Banking & Brokerage",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SHW": {
+      "industry": "Specialty Chemicals",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SJM": {
+      "industry": "Packaged Foods & Meats",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SKYD": {
+      "industry": "Movies & Entertainment",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SLB": {
+      "industry": "Oil & Gas Equipment & Services",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SMCI": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SNA": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SNDK": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SNPS": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SO": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SOLV": {
+      "industry": "Health Care Technology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SPG": {
+      "industry": "Retail REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SPGI": {
+      "industry": "Financial Exchanges & Data",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SRE": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "STE": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "STLD": {
+      "industry": "Steel",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "STT": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "STX": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "STZ": {
+      "industry": "Distillers & Vintners",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SW": {
+      "industry": "Paper & Plastic Packaging Products & Materials",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SWK": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SWKS": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SYF": {
+      "industry": "Consumer Finance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SYK": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "SYY": {
+      "industry": "Food Distributors",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "T": {
+      "industry": "Integrated Telecommunication Services",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TDG": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TDY": {
+      "industry": "Electronic Equipment & Instruments",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TECH": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TEL": {
+      "industry": "Electronic Manufacturing Services",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TER": {
+      "industry": "Semiconductor Materials & Equipment",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TFC": {
+      "industry": "Diversified Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TGT": {
+      "industry": "Consumer Staples Merchandise Retail",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TJX": {
+      "industry": "Apparel Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TKO": {
+      "industry": "Movies & Entertainment",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TMO": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TMUS": {
+      "industry": "Wireless Telecommunication Services",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TPL": {
+      "industry": "Oil & Gas Exploration & Production",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TPR": {
+      "industry": "Apparel, Accessories & Luxury Goods",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TRGP": {
+      "industry": "Oil & Gas Storage & Transportation",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TRMB": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TROW": {
+      "industry": "Asset Management & Custody Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TRV": {
+      "industry": "Property & Casualty Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TSCO": {
+      "industry": "Other Specialty Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TSLA": {
+      "industry": "Automobile Manufacturers",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TSN": {
+      "industry": "Packaged Foods & Meats",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TT": {
+      "industry": "Building Products",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TTWO": {
+      "industry": "Interactive Home Entertainment",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TWLO": {
+      "industry": "Systems Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TXN": {
+      "industry": "Semiconductors",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TXT": {
+      "industry": "Aerospace & Defense",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "TYL": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "UAL": {
+      "industry": "Passenger Airlines",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "UBER": {
+      "industry": "Passenger Ground Transportation",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "UDR": {
+      "industry": "Multi-Family Residential REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "UHS": {
+      "industry": "Health Care Facilities",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ULTA": {
+      "industry": "Other Specialty Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "UNH": {
+      "industry": "Managed Health Care",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "UNP": {
+      "industry": "Rail Transportation",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "UPS": {
+      "industry": "Air Freight & Logistics",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "URI": {
+      "industry": "Trading Companies & Distributors",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "USB": {
+      "industry": "Diversified Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "V": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VEEV": {
+      "industry": "Health Care Technology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VICI": {
+      "industry": "Hotel & Resort REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VLO": {
+      "industry": "Oil & Gas Refining & Marketing",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VLTO": {
+      "industry": "Environmental & Facilities Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VMC": {
+      "industry": "Construction Materials",
+      "sector": "Materials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VMRK": {
+      "industry": "Multi-Family Residential REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VRSK": {
+      "industry": "Research & Consulting Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VRSN": {
+      "industry": "Internet Services & Infrastructure",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VRT": {
+      "industry": "Electrical Components & Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VRTX": {
+      "industry": "Biotechnology",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VST": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VTR": {
+      "industry": "Health Care REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VTRS": {
+      "industry": "Pharmaceuticals",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VYLR": {
+      "industry": "Agricultural Products & Services",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "VZ": {
+      "industry": "Integrated Telecommunication Services",
+      "sector": "Communication Services",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WAB": {
+      "industry": "Construction Machinery & Heavy Transportation Equipment",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WAT": {
+      "industry": "Life Sciences Tools & Services",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WDAY": {
+      "industry": "Application Software",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WDC": {
+      "industry": "Technology Hardware, Storage & Peripherals",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WEC": {
+      "industry": "Electric Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WELL": {
+      "industry": "Health Care REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WFC": {
+      "industry": "Diversified Banks",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WM": {
+      "industry": "Environmental & Facilities Services",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WMB": {
+      "industry": "Oil & Gas Storage & Transportation",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WMT": {
+      "industry": "Consumer Staples Merchandise Retail",
+      "sector": "Consumer Staples",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WRB": {
+      "industry": "Property & Casualty Insurance",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WSM": {
+      "industry": "Homefurnishing Retail",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WST": {
+      "industry": "Health Care Supplies",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WTW": {
+      "industry": "Insurance Brokers",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WY": {
+      "industry": "Timber REITs",
+      "sector": "Real Estate",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "WYNN": {
+      "industry": "Casinos & Gaming",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "XEL": {
+      "industry": "Multi-Utilities",
+      "sector": "Utilities",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "XOM": {
+      "industry": "Integrated Oil & Gas",
+      "sector": "Energy",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "XYL": {
+      "industry": "Industrial Machinery & Supplies & Components",
+      "sector": "Industrials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "XYZ": {
+      "industry": "Transaction & Payment Processing Services",
+      "sector": "Financials",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "YUM": {
+      "industry": "Restaurants",
+      "sector": "Consumer Discretionary",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ZBH": {
+      "industry": "Health Care Equipment",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ZBRA": {
+      "industry": "Electronic Equipment & Instruments",
+      "sector": "Information Technology",
+      "security_type": "equity",
+      "us_listed": true
+    },
+    "ZTS": {
+      "industry": "Pharmaceuticals",
+      "sector": "Health Care",
+      "security_type": "equity",
+      "us_listed": true
+    }
+  }
+}
