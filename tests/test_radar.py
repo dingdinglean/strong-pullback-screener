@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pandas as pd
 
 import radar
-from email_sender import send_report_email
+from email_sender import send_report_email, send_test_failure_alert
 
 
 def row(symbol: str, *, rsi: float = 65, rsi5avg: float | None = None, rsi5change: float = 2, days_above_60: int = 7, r20: float = 8, r60: float = 18, distance: float = 4, theme: str = "半导体", us_listed: bool = True, security_type: str = "equity"):
@@ -197,6 +197,64 @@ class RadarTests(unittest.TestCase):
         )
         self.assertNotIn("python main.py", workflow)
         self.assertNotIn("change_notifier.py", workflow)
+        self.assertIn("pull_request:", workflow)
+        steps = _workflow_steps(workflow)
+        unit_tests = steps["Run unit tests"]
+        self.assertIn("python -m unittest discover -s tests -v", unit_tests)
+        self.assertNotIn("secrets.", unit_tests)
+        self.assertNotIn("SMTP_", unit_tests)
+        alert = steps["Send test-failure alert"]
+        self.assertIn("failure()", alert)
+        self.assertIn("steps.unit-tests.conclusion == 'failure'", alert)
+        self.assertIn("send_test_failure_alert", alert)
+        self.assertNotIn("radar.py", alert)
+        self.assertIn("secrets.SMTP_PASSWORD", alert)
+        self.assertLess(workflow.index("Send test-failure alert"), workflow.index("Run V4 radar and send daily report"))
+        radar_step = steps["Run V4 radar and send daily report"]
+        self.assertIn("python radar.py --send-email", radar_step)
+        self.assertIn("github.event_name != 'pull_request'", radar_step)
+        self.assertNotIn("always()", radar_step)
+
+    def test_failure_alert_uses_smtp_and_is_not_a_stock_report(self):
+        captured = {}
+
+        class FakeSMTP:
+            def __init__(self, host, port, timeout):
+                captured["connect"] = (host, port, timeout)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def ehlo(self):
+                pass
+
+            def starttls(self):
+                captured["starttls"] = True
+
+            def login(self, user, password):
+                captured["login"] = (user, password)
+
+            def send_message(self, message):
+                captured["subject"] = message["Subject"]
+                captured["body"] = message.get_content()
+
+        env = {
+            "SMTP_HOST": "smtp.example.test",
+            "SMTP_PORT": "587",
+            "SMTP_USER": "sender@example.test",
+            "SMTP_PASSWORD": "secret",
+            "EMAIL_TO": "to@example.test",
+        }
+        with patch.dict(os.environ, env, clear=False), patch("email_sender.smtplib.SMTP", FakeSMTP), patch("email_sender.smtplib.SMTP_SSL", FakeSMTP), patch("email_sender.time.sleep"):
+            send_test_failure_alert()
+        self.assertEqual(captured["connect"], ("smtp.example.test", 587, 30))
+        self.assertIn("单元测试失败", captured["subject"])
+        self.assertIn("日报未发送", captured["body"])
+        self.assertNotIn("当前主线", captured["body"])
+        self.assertNotIn("持续强势", captured["body"])
 
     def test_size_gate_skips_a_leading_short_symbol_table(self):
         short = _constituent_frame(["AAA", "BBB"])
@@ -326,6 +384,15 @@ class RadarTests(unittest.TestCase):
         self.assertNotIn("0700.HK", loaded)
         self.assertNotIn("OTCM", loaded)
         self.assertIn("AAPL", loaded)
+
+
+def _workflow_steps(text: str) -> dict[str, str]:
+    parts = text.split("\n      - name: ")
+    steps: dict[str, str] = {}
+    for part in parts[1:]:
+        name, _, body = part.partition("\n")
+        steps[name.strip()] = body
+    return steps
 
 
 def _equity() -> dict[str, object]:

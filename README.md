@@ -35,7 +35,8 @@ Actions 会把上述文件作为 artifact 保存。SMTP 临时失败会在 Pytho
 - 最初定时任务跑的是 `python main.py --send-email`。中间曾经改成先跑 `main.py`、再由 `change_notifier.py` 只在 A 榜状态变化时发信。
 - 2026-09-06 起，同一条定时任务改为 `python radar.py --send-email`。cron、手动触发和生产入口都停在这里。
 - `main.py` 和 `change_notifier.py` 还在仓库里，当前工作流不调用它们。V4 日报仍然每次运行都发信，不是 V3 那种“有变化才发”。
-- 单元测试原先不在 CI 里。现在在安装依赖之后、雷达步骤之前跑 `python -m unittest discover -s tests -v`。测试通过时，后面的缓存、`radar.py --send-email`、Secrets 和 artifact 与原来相同。测试失败会挡住当次日报。
+- 单元测试原先不在 CI 里。现在在安装依赖之后、雷达步骤之前跑 `python -m unittest discover -s tests -v`。这一步不注入 SMTP Secrets。测试通过时，定时和手动运行仍接着跑原来的 `radar.py --send-email`。测试失败则不发股票日报，改用同一套 SMTP 配置另发一封“单元测试失败、日报未发送”的告警，并且工作流失败。
+- Pull request 只跑单元测试，不跑扫描、不发日报。定时 `0 22 * * 1-5` 和手动运行不变。
 
 ## Actions
 
