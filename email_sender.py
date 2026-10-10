@@ -164,3 +164,18 @@ def send_report_email(
             else:
                 print(f"::warning::Email send failed after {attempt + 1} attempts: {exc!r}", file=sys.stderr)
     raise last_error or RuntimeError("Email send failed")
+
+
+def send_test_failure_alert() -> None:
+    """Tell recipients the daily stock report was withheld because tests failed.
+
+    Uses the same SMTP settings as the daily report and a different subject
+    and body, so a test failure cannot be mistaken for a ranked scan.
+    """
+    send_report_email(
+        "【美股强势雷达】单元测试失败，今日股票日报未发送。\n请查看 GitHub Actions 日志。\n",
+        [],
+        0,
+        subject_override="【美股强势雷达】单元测试失败｜日报未发送",
+        retries=1,
+    )

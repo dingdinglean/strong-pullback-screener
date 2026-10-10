@@ -2,6 +2,7 @@ name: US Market Strength Radar V4
 
 on:
   workflow_dispatch:
+  pull_request:
   schedule:
     # US trading weekdays, after the regular close (22:00 UTC).
     - cron: "0 22 * * 1-5"
@@ -28,7 +29,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Run unit tests
+        id: unit-tests
+        # No mail credentials are injected here. The suite mocks smtplib,
+        # so a stray send has nowhere to authenticate.
+        run: python -m unittest discover -s tests -v
+
+      - name: Send test-failure alert
+        if: failure() && steps.unit-tests.conclusion == 'failure'
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_SUBJECT: ${{ secrets.EMAIL_SUBJECT }}
+        run: python -c "from email_sender import send_test_failure_alert; send_test_failure_alert()"
+
       - name: Restore seven-day industry metadata cache
+        if: success() && github.event_name != 'pull_request'
         uses: actions/cache@v4
         with:
           path: .cache/market_metadata.json
@@ -37,6 +56,7 @@ jobs:
             market-radar-metadata-
 
       - name: Run V4 radar and send daily report
+        if: success() && github.event_name != 'pull_request'
         env:
           # Keep all delivery details in repository Secrets.  The code has
           # safe defaults only for local development; production never
@@ -50,11 +70,11 @@ jobs:
         run: python radar.py --send-email
 
       - name: Show compact daily report in log
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         run: cat output/market_radar_report.txt || true
 
       - name: Upload V4 radar artifacts
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: market-strength-radar-v4

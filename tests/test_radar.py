@@ -4,13 +4,14 @@ import os
 import json
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
 
 import radar
-from email_sender import send_report_email
+from email_sender import send_report_email, send_test_failure_alert
 
 
 def row(symbol: str, *, rsi: float = 65, rsi5avg: float | None = None, rsi5change: float = 2, days_above_60: int = 7, r20: float = 8, r60: float = 18, distance: float = 4, theme: str = "半导体", us_listed: bool = True, security_type: str = "equity"):
@@ -190,6 +191,260 @@ class RadarTests(unittest.TestCase):
         self.assertIn("market_radar_report.txt", workflow)
         self.assertIn("SMTP_HOST: ${{ secrets.SMTP_HOST }}", workflow)
         self.assertIn("SMTP_PORT: ${{ secrets.SMTP_PORT }}", workflow)
+        self.assertLess(
+            workflow.index("python -m unittest discover -s tests -v"),
+            workflow.index("python radar.py --send-email"),
+        )
+        self.assertNotIn("python main.py", workflow)
+        self.assertNotIn("change_notifier.py", workflow)
+        self.assertIn("pull_request:", workflow)
+        steps = _workflow_steps(workflow)
+        unit_tests = steps["Run unit tests"]
+        self.assertIn("python -m unittest discover -s tests -v", unit_tests)
+        self.assertNotIn("secrets.", unit_tests)
+        self.assertNotIn("SMTP_", unit_tests)
+        alert = steps["Send test-failure alert"]
+        self.assertIn("failure()", alert)
+        self.assertIn("steps.unit-tests.conclusion == 'failure'", alert)
+        self.assertIn("send_test_failure_alert", alert)
+        self.assertNotIn("radar.py", alert)
+        self.assertIn("secrets.SMTP_PASSWORD", alert)
+        self.assertLess(workflow.index("Send test-failure alert"), workflow.index("Run V4 radar and send daily report"))
+        radar_step = steps["Run V4 radar and send daily report"]
+        self.assertIn("python radar.py --send-email", radar_step)
+        self.assertIn("github.event_name != 'pull_request'", radar_step)
+        self.assertNotIn("always()", radar_step)
+
+    def test_failure_alert_uses_smtp_and_is_not_a_stock_report(self):
+        captured = {}
+
+        class FakeSMTP:
+            def __init__(self, host, port, timeout):
+                captured["connect"] = (host, port, timeout)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def ehlo(self):
+                pass
+
+            def starttls(self):
+                captured["starttls"] = True
+
+            def login(self, user, password):
+                captured["login"] = (user, password)
+
+            def send_message(self, message):
+                captured["subject"] = message["Subject"]
+                captured["body"] = message.get_content()
+
+        env = {
+            "SMTP_HOST": "smtp.example.test",
+            "SMTP_PORT": "587",
+            "SMTP_USER": "sender@example.test",
+            "SMTP_PASSWORD": "secret",
+            "EMAIL_TO": "to@example.test",
+        }
+        with patch.dict(os.environ, env, clear=False), patch("email_sender.smtplib.SMTP", FakeSMTP), patch("email_sender.smtplib.SMTP_SSL", FakeSMTP), patch("email_sender.time.sleep"):
+            send_test_failure_alert()
+        self.assertEqual(captured["connect"], ("smtp.example.test", 587, 30))
+        self.assertIn("单元测试失败", captured["subject"])
+        self.assertIn("日报未发送", captured["body"])
+        self.assertNotIn("当前主线", captured["body"])
+        self.assertNotIn("持续强势", captured["body"])
+
+    def test_size_gate_skips_a_leading_short_symbol_table(self):
+        short = _constituent_frame(["AAA", "BBB"])
+        full_symbols = _synthetic_symbols(503)
+        full = _constituent_frame(full_symbols)
+        parsed = radar._metadata_from_tables([short, full], radar.WIKI_SOURCES[0])
+        self.assertEqual(set(parsed), set(full_symbols))
+        self.assertEqual(radar._metadata_from_tables([short], radar.WIKI_SOURCES[0]), {})
+        self.assertEqual(radar._metadata_from_tables([full], radar.WIKI_SOURCES[1]), {})
+        nasdaq = _constituent_frame(_synthetic_symbols(101))
+        self.assertEqual(len(radar._metadata_from_tables([nasdaq], radar.WIKI_SOURCES[1])), 101)
+
+    def test_plausible_universe_rejects_short_huge_and_anchorless_lists(self):
+        self.assertFalse(radar.is_plausible_universe(_synthetic_metadata(radar.MIN_CONSTITUENTS - 1)))
+        self.assertTrue(radar.is_plausible_universe(_synthetic_metadata(radar.MIN_CONSTITUENTS)))
+        self.assertTrue(radar.is_plausible_universe(_synthetic_metadata(radar.MAX_CONSTITUENTS)))
+        self.assertFalse(radar.is_plausible_universe(_synthetic_metadata(radar.MAX_CONSTITUENTS + 1)))
+        anchorless = _synthetic_metadata(radar.MIN_CONSTITUENTS + len(radar.ANCHOR_SYMBOLS))
+        for symbol in radar.ANCHOR_SYMBOLS:
+            del anchorless[symbol]
+        self.assertGreaterEqual(len(anchorless), radar.MIN_CONSTITUENTS)
+        self.assertFalse(radar.is_plausible_universe(anchorless))
+
+    def test_fetch_keeps_in_range_table_and_rejects_only_short_tables(self):
+        short = _constituent_frame(["AAA", "BBB"])
+        full_symbols = _synthetic_symbols(503)
+        full = _constituent_frame(full_symbols)
+
+        class Body:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return b"<html></html>"
+
+        with patch("radar.urlopen", return_value=Body()), patch("pandas.read_html", side_effect=[[short, full], [short]]):
+            accepted = radar.fetch_universe_metadata()
+        self.assertEqual(set(accepted), set(full_symbols))
+
+        with patch("radar.urlopen", return_value=Body()), patch("pandas.read_html", return_value=[short]):
+            self.assertEqual(radar.fetch_universe_metadata(), {})
+
+    def test_committed_snapshot_is_a_plausible_us_list(self):
+        raw = json.loads(radar.CONSTITUENT_CACHE.read_text(encoding="utf-8"))
+        symbols = raw["symbols"]
+        self.assertEqual(raw["symbol_count"], len(symbols))
+        self.assertIsNotNone(radar._parse_stamp(raw["fetched_at"]))
+        self.assertTrue(radar.is_plausible_universe(symbols))
+        self.assertTrue(all(radar.is_us_listed_equity(symbol, meta) for symbol, meta in symbols.items()))
+        self.assertTrue(all("." not in symbol for symbol in symbols))
+
+    def test_fresh_snapshot_skips_wikipedia_and_keeps_theme_priority(self):
+        raw = json.loads(radar.CONSTITUENT_CACHE.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as directory:
+            constituent = _stage_constituents(Path(directory), raw["symbols"], _iso(timedelta(0)))
+            before = constituent.read_text(encoding="utf-8")
+            runtime = Path(directory) / "market_metadata.json"
+            with patch.object(radar, "fetch_universe_metadata", side_effect=AssertionError("wikipedia")):
+                universe = radar.build_universe(runtime, constituent)
+            self.assertEqual(constituent.read_text(encoding="utf-8"), before)
+            self.assertTrue(runtime.exists())
+            for symbol in raw["symbols"]:
+                self.assertIn(symbol, universe)
+            self.assertEqual(universe["NVDA"]["industry"], "半导体")
+            self.assertEqual(universe["TSM"]["security_type"], "adr")
+
+    def test_failed_or_implausible_refresh_falls_back_without_poisoning_runtime_cache(self):
+        raw = json.loads(radar.CONSTITUENT_CACHE.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as directory:
+            constituent = _stage_constituents(Path(directory), raw["symbols"], _iso(timedelta(days=30)))
+            runtime = Path(directory) / "market_metadata.json"
+            with patch.object(radar, "fetch_universe_metadata", side_effect=OSError("down")):
+                failed = radar.build_universe(runtime, constituent)
+            self.assertFalse(runtime.exists())
+            for symbol in raw["symbols"]:
+                self.assertIn(symbol, failed)
+
+            fake = {"FAKE1": {"sector": "Energy", "industry": "Oil", "us_listed": True, "security_type": "equity"}}
+            with patch.object(radar, "fetch_universe_metadata", return_value=fake):
+                rejected = radar.build_universe(runtime, constituent)
+            self.assertNotIn("FAKE1", rejected)
+            self.assertIn("AAPL", rejected)
+            self.assertFalse(runtime.exists())
+
+    def test_plausible_refresh_replaces_a_stale_snapshot(self):
+        raw = json.loads(radar.CONSTITUENT_CACHE.read_text(encoding="utf-8"))
+        refresh_symbols = _synthetic_symbols(480, extra=("NEWQ",))
+        refresh = {symbol: _equity() for symbol in refresh_symbols}
+        dropped = next(
+            symbol
+            for symbol in sorted(raw["symbols"])
+            if symbol not in radar.THEME_MAP and symbol not in refresh
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            constituent = _stage_constituents(Path(directory), raw["symbols"], _iso(timedelta(days=30)))
+            runtime = Path(directory) / "market_metadata.json"
+            with patch.object(radar, "fetch_universe_metadata", return_value=refresh):
+                universe = radar.build_universe(runtime, constituent)
+            self.assertIn("NEWQ", universe)
+            self.assertNotIn(dropped, universe)
+            self.assertEqual(universe["NVDA"]["industry"], "半导体")
+            self.assertTrue(runtime.exists())
+            self.assertNotIn(dropped, json.loads(runtime.read_text(encoding="utf-8"))["symbols"])
+
+    def test_fresh_runtime_cache_skips_fetch_when_committed_snapshot_is_stale(self):
+        raw = json.loads(radar.CONSTITUENT_CACHE.read_text(encoding="utf-8"))
+        stamp = _iso(timedelta(0))
+        runtime_symbols = {symbol: {**_equity(), "cached_at": stamp} for symbol in _synthetic_symbols(480, extra=("RUNQ",))}
+        with tempfile.TemporaryDirectory() as directory:
+            constituent = _stage_constituents(Path(directory), raw["symbols"], _iso(timedelta(days=30)))
+            runtime = Path(directory) / "market_metadata.json"
+            radar.save_metadata_cache(runtime_symbols, runtime)
+            with patch.object(radar, "fetch_universe_metadata", side_effect=AssertionError("wikipedia")):
+                universe = radar.build_universe(runtime, constituent)
+            self.assertIn("RUNQ", universe)
+
+    def test_committed_loader_drops_non_us_symbols(self):
+        symbols = {symbol: _equity() for symbol in _synthetic_symbols(radar.MIN_CONSTITUENTS)}
+        symbols["0700.HK"] = {"us_listed": True, "security_type": "equity", "sector": "其他", "industry": "其他"}
+        symbols["OTCM"] = {"us_listed": False, "security_type": "equity", "sector": "其他", "industry": "其他"}
+        with tempfile.TemporaryDirectory() as directory:
+            path = _stage_constituents(Path(directory), symbols, _iso(timedelta(days=30)))
+            loaded = radar.load_constituent_cache(path)
+        self.assertNotIn("0700.HK", loaded)
+        self.assertNotIn("OTCM", loaded)
+        self.assertIn("AAPL", loaded)
+
+
+def _workflow_steps(text: str) -> dict[str, str]:
+    parts = text.split("\n      - name: ")
+    steps: dict[str, str] = {}
+    for part in parts[1:]:
+        name, _, body = part.partition("\n")
+        steps[name.strip()] = body
+    return steps
+
+
+def _equity() -> dict[str, object]:
+    return {
+        "sector": "Industrials",
+        "industry": "Industrial Conglomerates",
+        "us_listed": True,
+        "security_type": "equity",
+    }
+
+
+def _letter_ticker(index: int) -> str:
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    return alphabet[(index // 676) % 26] + alphabet[(index // 26) % 26] + alphabet[index % 26]
+
+
+def _synthetic_symbols(count: int, extra: tuple[str, ...] = ()) -> list[str]:
+    symbols = list(dict.fromkeys([*sorted(radar.ANCHOR_SYMBOLS), *extra]))
+    index = 0
+    while len(symbols) < count:
+        ticker = _letter_ticker(index)
+        index += 1
+        if ticker not in symbols:
+            symbols.append(ticker)
+    return symbols[:count]
+
+
+def _synthetic_metadata(count: int) -> dict[str, dict[str, object]]:
+    return {symbol: _equity() for symbol in _synthetic_symbols(count)}
+
+
+def _constituent_frame(symbols: list[str]) -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "Symbol": symbols,
+            "GICS Sector": ["Industrials"] * len(symbols),
+            "GICS Sub-Industry": ["Industrial Conglomerates"] * len(symbols),
+        }
+    )
+
+
+def _iso(age: timedelta) -> str:
+    return (datetime.now(timezone.utc) - age).isoformat()
+
+
+def _stage_constituents(directory: Path, symbols: dict, fetched_at: str) -> Path:
+    path = directory / "index_constituents.json"
+    path.write_text(
+        json.dumps({"fetched_at": fetched_at, "symbol_count": len(symbols), "symbols": symbols}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return path
 
 
 if __name__ == "__main__":

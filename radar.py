@@ -25,6 +25,10 @@ WATCHLIST_CSV = OUTPUT_DIR / "watchlist.csv"
 MARKDOWN_PATH = OUTPUT_DIR / "market_radar_report.md"
 TEXT_PATH = OUTPUT_DIR / "market_radar_report.txt"
 METADATA_CACHE = Path(".cache/market_metadata.json")
+# Committed baseline for index membership. Runtime refreshes still go to
+# METADATA_CACHE; this file is what a clean checkout uses, and what a bad
+# Wikipedia response falls back to.
+CONSTITUENT_CACHE = Path("data/index_constituents.json")
 METADATA_TTL = timedelta(days=7)
 MIN_AVG_VOLUME = 100_000
 TOP10_LIMIT = 10
@@ -91,6 +95,17 @@ WIKI_SOURCES = (
     "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
     "https://en.wikipedia.org/wiki/Nasdaq-100",
 )
+# A usable refresh is the S&P 500 table (about 503 names). The Nasdaq-100
+# article currently has no ticker table, so it adds nothing until a table in
+# the Nasdaq band shows up. Counts outside these bands are a bad parse.
+MIN_CONSTITUENTS = 450
+MAX_CONSTITUENTS = 700
+MIN_ANCHOR_MATCHES = 3
+ANCHOR_SYMBOLS = frozenset({"AAPL", "MSFT", "AMZN", "JPM", "XOM"})
+SOURCE_SYMBOL_BOUNDS = {
+    WIKI_SOURCES[0]: (450, 560),
+    WIKI_SOURCES[1]: (90, 120),
+}
 
 
 def finite(value: Any, default: float = 0.0) -> float:
@@ -162,12 +177,31 @@ def pct_change(close, sessions: int) -> float:
     return (end / start - 1) * 100
 
 
-def _cache_is_fresh(value: dict[str, Any]) -> bool:
-    try:
-        cached_at = datetime.fromisoformat(str(value.get("cached_at", "")).replace("Z", "+00:00"))
-        return datetime.now(timezone.utc) - cached_at <= METADATA_TTL
-    except ValueError:
+def _parse_stamp(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        stamp = value
+    else:
+        try:
+            stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=timezone.utc)
+    return stamp
+
+
+def _stamp_is_fresh(stamp: datetime | None, now: datetime | None = None) -> bool:
+    if stamp is None:
         return False
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    age = now - stamp
+    return timedelta(0) <= age <= METADATA_TTL
+
+
+def _cache_is_fresh(value: dict[str, Any]) -> bool:
+    return _stamp_is_fresh(_parse_stamp(value.get("cached_at", "")))
 
 
 def load_metadata_cache(path: Path = METADATA_CACHE) -> dict[str, dict[str, str]]:
@@ -197,8 +231,65 @@ def _find_column(columns: Iterable[str], choices: Iterable[str]) -> str | None:
     return None
 
 
+def is_plausible_universe(metadata: dict[str, Any] | None) -> bool:
+    """Reject empty, tiny, or huge parses, and parses missing core listings."""
+    if not isinstance(metadata, dict) or not metadata:
+        return False
+    eligible = [
+        symbol
+        for symbol, value in metadata.items()
+        if isinstance(value, dict) and is_us_listed_equity(str(symbol), value)
+    ]
+    if not (MIN_CONSTITUENTS <= len(eligible) <= MAX_CONSTITUENTS):
+        return False
+    anchors = sum(
+        1
+        for symbol in ANCHOR_SYMBOLS
+        if isinstance(metadata.get(symbol), dict) and is_us_listed_equity(symbol, metadata[symbol])
+    )
+    return anchors >= MIN_ANCHOR_MATCHES
+
+
+def _parse_constituent_table(table) -> dict[str, dict[str, Any]]:
+    symbol_column = _find_column(table.columns, ("Symbol", "Ticker", "Ticker symbol"))
+    if not symbol_column:
+        return {}
+    sector_column = _find_column(table.columns, ("GICS Sector", "Sector", "ICB sector"))
+    industry_column = _find_column(table.columns, ("GICS Sub-Industry", "Industry", "ICB subsector"))
+    parsed: dict[str, dict[str, Any]] = {}
+    for _, row in table.iterrows():
+        symbol = str(row.get(symbol_column, "")).strip().upper().replace(".", "-")
+        if not symbol or len(symbol) > 10 or not symbol.replace("-", "").isalnum():
+            continue
+        sector = str(row.get(sector_column, "") if sector_column else "").strip()
+        industry = str(row.get(industry_column, "") if industry_column else "").strip()
+        # Both configured sources are US index pages. A source or cache failure
+        # must never expand the eligible market.
+        parsed[symbol] = {
+            "sector": sector or "其他",
+            "industry": industry or sector or "其他",
+            "us_listed": True,
+            "security_type": "equity",
+        }
+    return parsed
+
+
+def _metadata_from_tables(tables, url: str) -> dict[str, dict[str, Any]]:
+    """Use the first table whose size matches that Wikipedia page."""
+    low, high = SOURCE_SYMBOL_BOUNDS.get(url, (MIN_CONSTITUENTS, MAX_CONSTITUENTS))
+    for table in tables:
+        parsed = _parse_constituent_table(table)
+        if low <= len(parsed) <= high:
+            return parsed
+    return {}
+
+
 def fetch_universe_metadata() -> dict[str, dict[str, str]]:
-    """Read stable index tables once; never request company metadata one ticker at a time."""
+    """Read stable index tables once; never request company metadata one ticker at a time.
+
+    An implausible parse returns an empty mapping so callers keep the last good
+    constituent snapshot instead of scanning a handful of rows.
+    """
     import pandas as pd
 
     metadata: dict[str, dict[str, str]] = {}
@@ -213,39 +304,103 @@ def fetch_universe_metadata() -> dict[str, dict[str, str]]:
         except Exception as exc:
             print(f"::warning::Universe metadata source unavailable: {url} ({exc})", file=sys.stderr)
             continue
-        for table in tables:
-            symbol_column = _find_column(table.columns, ("Symbol", "Ticker", "Ticker symbol"))
-            if not symbol_column:
-                continue
-            sector_column = _find_column(table.columns, ("GICS Sector", "Sector", "ICB sector"))
-            industry_column = _find_column(table.columns, ("GICS Sub-Industry", "Industry", "ICB subsector"))
-            for _, row in table.iterrows():
-                symbol = str(row.get(symbol_column, "")).strip().upper().replace(".", "-")
-                if not symbol or len(symbol) > 10 or not symbol.replace("-", "").isalnum():
-                    continue
-                sector = str(row.get(sector_column, "") if sector_column else "").strip()
-                industry = str(row.get(industry_column, "") if industry_column else "").strip()
-                # Both source tables contain US-listed index constituents. A
-                # source/cache failure must never expand the eligible market.
-                metadata[symbol] = {"sector": sector or "其他", "industry": industry or sector or "其他", "us_listed": True, "security_type": "equity"}
-            break
+        parsed = _metadata_from_tables(tables, url)
+        if not parsed:
+            print(f"Constituent table skipped for {url}: no table in the expected size range", file=sys.stderr)
+            continue
+        metadata.update(parsed)
+    if not is_plausible_universe(metadata):
+        print(f"::warning::Wikipedia constituent list rejected ({len(metadata)} symbols)", file=sys.stderr)
+        return {}
     return metadata
 
 
-def build_universe(cache_path: Path = METADATA_CACHE) -> dict[str, dict[str, str]]:
-    cached = load_metadata_cache(cache_path)
-    fresh = fetch_universe_metadata() if not cached else {}
-    merged: dict[str, dict[str, str]] = dict(cached)
-    now = datetime.now(timezone.utc).isoformat()
-    for symbol, value in fresh.items():
-        merged[symbol] = {**value, "cached_at": now}
+def load_constituent_cache(path: Path = CONSTITUENT_CACHE) -> dict[str, dict[str, Any]]:
+    """Load the committed snapshot even when it is older than the refresh interval."""
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    entries = raw.get("symbols", {}) if isinstance(raw, dict) else {}
+    if not isinstance(entries, dict):
+        return {}
+    loaded: dict[str, dict[str, Any]] = {}
+    for symbol, value in entries.items():
+        if not isinstance(value, dict):
+            continue
+        normalized = str(symbol).strip().upper().replace(".", "-")
+        if not is_us_listed_equity(normalized, value):
+            continue
+        loaded[normalized] = value
+    return loaded
+
+
+def constituent_cache_fetched_at(path: Path = CONSTITUENT_CACHE) -> datetime | None:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    return _parse_stamp(raw.get("fetched_at") or "")
+
+
+def build_universe(cache_path: Path = METADATA_CACHE, constituent_path: Path = CONSTITUENT_CACHE) -> dict[str, dict[str, str]]:
+    """Resolve index membership from a fresh snapshot, else the committed cache.
+
+    Wikipedia is contacted only when both the runtime cache and the committed
+    snapshot are older than METADATA_TTL or too small to trust. A failed or
+    implausible fetch keeps the committed list and does not overwrite the
+    runtime cache.
+    """
+    runtime = load_metadata_cache(cache_path)
+    committed = load_constituent_cache(constituent_path)
+    committed_stamp = constituent_cache_fetched_at(constituent_path)
+    now_dt = datetime.now(timezone.utc)
+    now = now_dt.isoformat()
+
+    base: dict[str, dict[str, Any]] = {}
+    origin = "theme-fallback"
+    if is_plausible_universe(runtime):
+        base = dict(runtime)
+        origin = "runtime-cache"
+    elif is_plausible_universe(committed) and _stamp_is_fresh(committed_stamp, now_dt):
+        stamp = committed_stamp.isoformat()
+        base = {symbol: {**value, "cached_at": value.get("cached_at") or stamp} for symbol, value in committed.items()}
+        origin = "committed-cache"
+    else:
+        fresh: dict[str, dict[str, Any]] = {}
+        try:
+            fresh = fetch_universe_metadata()
+        except Exception as exc:
+            print(f"::warning::Universe refresh failed: {exc}", file=sys.stderr)
+            fresh = {}
+        if is_plausible_universe(fresh):
+            base = {symbol: {**value, "cached_at": now} for symbol, value in fresh.items()}
+            origin = "wikipedia"
+        elif is_plausible_universe(committed):
+            stamp = committed_stamp.isoformat() if committed_stamp else now
+            print(
+                f"::warning::Universe refresh unusable ({len(fresh)} symbols); using committed constituent cache ({len(committed)} symbols)",
+                file=sys.stderr,
+            )
+            base = {symbol: {**value, "cached_at": value.get("cached_at") or stamp} for symbol, value in committed.items()}
+            origin = "committed-fallback"
+        else:
+            print("::warning::No plausible constituent snapshot is available; using the curated theme list", file=sys.stderr)
+
+    merged: dict[str, dict[str, Any]] = dict(base)
     for symbol, theme in THEME_MAP.items():
         old = merged.get(symbol, {})
         merged[symbol] = {"sector": old.get("sector", "其他"), "industry": theme, "us_listed": True, "security_type": "adr" if symbol in {"TSM", "ASML", "NVO"} else "equity", "cached_at": now}
     if not merged:
         merged = {symbol: {"sector": "其他", "industry": theme, "us_listed": True, "security_type": "adr" if symbol in {"TSM", "ASML", "NVO"} else "equity", "cached_at": now} for symbol, theme in THEME_MAP.items()}
     merged = {symbol: metadata for symbol, metadata in merged.items() if is_us_listed_equity(symbol, metadata)}
-    save_metadata_cache(merged, cache_path)
+    # A failed refresh must not stamp the runtime cache as fresh, or the next
+    # run would skip Wikipedia for a full week.
+    if origin in {"runtime-cache", "committed-cache", "wikipedia"} and is_plausible_universe(merged):
+        save_metadata_cache(merged, cache_path)
+    print(f"Constituent universe: {origin} ({len(base)} symbols)")
     return merged
 
 
